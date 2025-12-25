@@ -262,11 +262,19 @@ class _HeaderMenu extends StatelessWidget {
           ],
         ),
         const Spacer(),
-        const Icon(Icons.local_hospital_outlined, color: _accent, size: 22),
+        SizedBox(
+          width: 44,
+          height: 44,
+          child: Image.asset(
+            'assets/images/logonly.png',
+            fit: BoxFit.contain,
+          ),
+        ),
       ],
     );
   }
 }
+
 
 enum _HomeMenuAction { profile, settings, privacy, logout }
 

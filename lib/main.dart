@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-
+//import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'src/pages/login.dart';
 
@@ -10,9 +10,15 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
+ // await clearRememberedLogin();
   runApp(const MyApp());
 }
+
+/*Future<void> clearRememberedLogin() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
+}*/
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
