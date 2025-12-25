@@ -15,6 +15,7 @@ import 'src/pages/documents.dart';
 import 'src/pages/consultation.dart';
 import 'src/pages/patient_care.dart';
 import 'src/pages/heart_health.dart';
+import 'src/pages/home.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,7 +44,8 @@ class MyApp extends StatelessWidget {
       //home: LoginPage(),
       //  home: SymptomsPage(),
       //  home: HeartHealthPage(),
-        home: MedicalInfoPage(),
+       // home: MedicalInfoPage(),
+      home: HomePage(),
     );
   }
 }

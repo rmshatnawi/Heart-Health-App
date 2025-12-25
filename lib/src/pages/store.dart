@@ -1,3 +1,4 @@
+// lib/src/pages/store.dart (or your store file name)
 import 'package:flutter/material.dart';
 import 'payment.dart';
 
@@ -20,31 +21,30 @@ class _StorePageState extends State<StorePage> {
   ];
 
   int _selectedCategory = 0;
-  int _cartCount = 3;
 
-  final List<_Product> _allProducts = const [
-    _Product(
+  final List<StoreProduct> _allProducts = const [
+    StoreProduct(
       title: 'Digital Blood Pressure Monitor',
       price: 49.99,
       category: 'Monitors',
       imageUrl:
       'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&w=1200&q=70',
     ),
-    _Product(
+    StoreProduct(
       title: 'Digital Infrared Thermometer',
       price: 24.99,
       category: 'Thermometers',
       imageUrl:
       'https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?auto=format&fit=crop&w=1200&q=70',
     ),
-    _Product(
+    StoreProduct(
       title: 'Disposable Medical Face Masks (50 pcs)',
       price: 19.99,
       category: 'Masks',
       imageUrl:
       'https://images.unsplash.com/photo-1584634731339-252c581abfc5?auto=format&fit=crop&w=1200&q=70',
     ),
-    _Product(
+    StoreProduct(
       title: 'Pain Relief Medication - Extra Strength',
       price: 12.99,
       category: 'Medication',
@@ -54,12 +54,18 @@ class _StorePageState extends State<StorePage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _search.addListener(() => setState(() {}));
+  }
+
+  @override
   void dispose() {
     _search.dispose();
     super.dispose();
   }
 
-  List<_Product> get _filtered {
+  List<StoreProduct> get _filtered {
     final q = _search.text.trim().toLowerCase();
     final selected = _categories[_selectedCategory];
 
@@ -77,140 +83,148 @@ class _StorePageState extends State<StorePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F6FF),
       body: SafeArea(
-        child: Column(
-          children: [
-            _TopHeader(
-              title: 'You Need It Store',
-              subtitle: 'Medical Supplies',
-              onBack: () => Navigator.of(context).pop(),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _SearchRow(
-                      controller: _search,
-                      cartCount: _cartCount,
-                      onCartTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const PaymentPage()),
-                        );
-                      },
-                      onChanged: (_) => setState(() {}),
-                    ),
-                    const SizedBox(height: 18),
-
-                    const Text(
-                      'Categories',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF1B2B55),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    SizedBox(
-                      height: 44,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _categories.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 10),
-                        itemBuilder: (context, i) {
-                          final selected = i == _selectedCategory;
-                          return _CategoryChip(
-                            text: _categories[i],
-                            selected: selected,
-                            icon: _categoryIcon(_categories[i]),
-                            onTap: () => setState(() => _selectedCategory = i),
-                          );
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        // (1) fit phone screen width
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child: Column(
+              children: [
+                _TopHeader(
+                  title: 'You Need It Store',
+                  subtitle: 'Medical Supplies',
+                  onBack: () => Navigator.of(context).pop(),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        ValueListenableBuilder<int>(
+                          valueListenable: cart.itemCount,
+                          builder: (_, count, __) {
+                            return _SearchRow(
+                              controller: _search,
+                              cartCount: count,
+                              onCartTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (_) => const PaymentPage()),
+                                );
+                              },
+                              onChanged: (_) => setState(() {}),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 18),
                         const Text(
-                          'Featured Products',
+                          'Categories',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
                             color: Color(0xFF1B2B55),
                           ),
                         ),
-                        Text(
-                          '${items.length} items',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF6B7C97),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 44,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _categories.length,
+                            separatorBuilder: (_, __) =>
+                            const SizedBox(width: 10),
+                            itemBuilder: (context, i) {
+                              final selected = i == _selectedCategory;
+                              return _CategoryChip(
+                                text: _categories[i],
+                                selected: selected,
+                                icon: _categoryIcon(_categories[i]),
+                                onTap: () => setState(() => _selectedCategory = i),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Featured Products',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF1B2B55),
+                              ),
+                            ),
+                            Text(
+                              '${items.length} items',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF6B7C97),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        GridView.builder(
+                          itemCount: items.length,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 14,
+                            crossAxisSpacing: 14,
+                            childAspectRatio: 0.74,
+                          ),
+                          itemBuilder: (context, index) {
+                            final p = items[index];
+                            return _ProductCard(
+                              product: p,
+                              onFavTap: () {},
+                              onAddTap: () {
+                                // (1) add to basket model
+                                cart.add(p);
+                              },
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 18),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2F73FF),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                    builder: (_) => const PaymentPage()),
+                              );
+                            },
+                            child: const Text(
+                              'Go to Payment',
+                              style: TextStyle(
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
                       ],
                     ),
-
-                    const SizedBox(height: 12),
-
-                    GridView.builder(
-                      itemCount: items.length,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 14,
-                        crossAxisSpacing: 14,
-                        childAspectRatio: 0.74,
-                      ),
-                      itemBuilder: (context, index) {
-                        final p = items[index];
-                        return _ProductCard(
-                          product: p,
-                          onFavTap: () {},
-                          onAddTap: () {
-                            setState(() => _cartCount += 1);
-                          },
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    // Extra explicit button to Payment page (you asked for it)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2F73FF),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 0,
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const PaymentPage()),
-                          );
-                        },
-                        child: const Text(
-                          'Go to Payment',
-                          style: TextStyle(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -245,20 +259,25 @@ class _TopHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    const blue = Color(0xFF2F73FF);
+
+    // header background color = icon color, icon white
+    return Container(
+      color: blue,
       padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
       child: Row(
         children: [
           IconButton(
             onPressed: onBack,
-            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                color: Colors.white),
           ),
           const SizedBox(width: 6),
           Container(
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: const Color(0xFF2F73FF),
+              color: Colors.white.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(Icons.favorite_border, color: Colors.white),
@@ -273,7 +292,7 @@ class _TopHeader extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF1B2B55),
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -282,7 +301,7 @@ class _TopHeader extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF6B7C97),
+                    color: Color(0xE6FFFFFF),
                   ),
                 ),
               ],
@@ -352,14 +371,16 @@ class _SearchRow extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                child: const Icon(Icons.shopping_cart_outlined,
+                    color: Colors.white),
               ),
               if (cartCount > 0)
                 Positioned(
                   right: -2,
                   top: -6,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE53935),
                       borderRadius: BorderRadius.circular(999),
@@ -432,7 +453,7 @@ class _CategoryChip extends StatelessWidget {
 }
 
 class _ProductCard extends StatelessWidget {
-  final _Product product;
+  final StoreProduct product;
   final VoidCallback onFavTap;
   final VoidCallback onAddTap;
 
@@ -540,10 +561,17 @@ class _ProductCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                           ),
                           onPressed: onAddTap,
-                          icon: const Icon(Icons.shopping_cart_outlined, size: 16),
+                          icon: const Icon(
+                            Icons.shopping_cart_outlined,
+                            size: 16,
+                            color: Colors.white,
+                          ),
                           label: const Text(
                             'Add',
-                            style: TextStyle(fontWeight: FontWeight.w900),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -557,18 +585,4 @@ class _ProductCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Product {
-  final String title;
-  final double price;
-  final String category;
-  final String imageUrl;
-
-  const _Product({
-    required this.title,
-    required this.price,
-    required this.category,
-    required this.imageUrl,
-  });
 }

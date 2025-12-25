@@ -2,6 +2,14 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
+enum Sex { male, female }
+
+enum GlucoseTestType { fasting, ogtt2h, random }
+
+enum SugarInputMode { glucose, a1c }
+
+enum BpCategory { normal, elevated, stage1, stage2, crisis }
+
 class CalculatorPage extends StatefulWidget {
   const CalculatorPage({super.key});
 
@@ -13,25 +21,60 @@ class _CalculatorPageState extends State<CalculatorPage>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
+  // BMI
   final _weightController = TextEditingController();
   final _heightController = TextEditingController();
-
+  Sex _sex = Sex.male;
   double? _bmi;
   String? _bmiLabel;
+
+  // Blood sugar (glucose + A1c)
+  SugarInputMode _sugarMode = SugarInputMode.glucose;
+  final _glucoseController = TextEditingController();
+  GlucoseTestType _glucoseType = GlucoseTestType.fasting;
+  double? _glucoseValue;
+  String? _glucoseLabel;
+
+  final _a1cController = TextEditingController();
+  double? _a1cValue;
+  String? _a1cLabel;
+
+  // Blood pressure
+  final _sbpController = TextEditingController();
+  final _dbpController = TextEditingController();
+  int? _sbp;
+  int? _dbp;
+  BpCategory? _bpCategory;
+  String? _bpLabel;
+
+  // Heart risk (screening score)
+  final _ageController = TextEditingController();
+  bool _smoker = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+
     _weightController.dispose();
     _heightController.dispose();
+
+    _glucoseController.dispose();
+    _a1cController.dispose();
+
+    _sbpController.dispose();
+    _dbpController.dispose();
+
+    _ageController.dispose();
     super.dispose();
   }
+
+  // ============================ BMI ============================
 
   void _calcBmi() {
     final w = double.tryParse(_weightController.text.trim());
@@ -55,8 +98,12 @@ class _CalculatorPageState extends State<CalculatorPage>
       label = 'Normal';
     } else if (bmi < 30) {
       label = 'Overweight';
+    } else if (bmi < 35) {
+      label = 'Obesity (Class I)';
+    } else if (bmi < 40) {
+      label = 'Obesity (Class II)';
     } else {
-      label = 'Obesity';
+      label = 'Obesity (Class III)';
     }
 
     setState(() {
@@ -65,518 +112,1028 @@ class _CalculatorPageState extends State<CalculatorPage>
     });
   }
 
+  // ============================ BLOOD SUGAR ============================
+
+  void _calcGlucose() {
+    final v = double.tryParse(_glucoseController.text.trim());
+    if (v == null || v <= 0) {
+      setState(() {
+        _glucoseValue = null;
+        _glucoseLabel = 'Enter a valid number';
+      });
+      return;
+    }
+
+    String label;
+    if (_glucoseType == GlucoseTestType.fasting) {
+      if (v < 100) {
+        label = 'Normal (fasting)';
+      } else if (v < 126) {
+        label = 'Prediabetes (fasting)';
+      } else {
+        label = 'Diabetes range (fasting)';
+      }
+    } else if (_glucoseType == GlucoseTestType.ogtt2h) {
+      if (v < 140) {
+        label = 'Normal (2-hour OGTT)';
+      } else if (v < 200) {
+        label = 'Prediabetes (2-hour OGTT)';
+      } else {
+        label = 'Diabetes range (2-hour OGTT)';
+      }
+    } else {
+      if (v < 140) {
+        label = 'Typical range (random)';
+      } else if (v < 200) {
+        label = 'Elevated (random)';
+      } else {
+        label = 'Diabetes range (random)';
+      }
+    }
+
+    setState(() {
+      _glucoseValue = double.parse(v.toStringAsFixed(0));
+      _glucoseLabel = label;
+    });
+  }
+
+  void _calcA1c() {
+    final v = double.tryParse(_a1cController.text.trim());
+    if (v == null || v <= 0) {
+      setState(() {
+        _a1cValue = null;
+        _a1cLabel = 'Enter a valid number';
+      });
+      return;
+    }
+
+    String label;
+    if (v < 5.7) {
+      label = 'Normal (A1c)';
+    } else if (v < 6.5) {
+      label = 'Prediabetes (A1c)';
+    } else {
+      label = 'Diabetes range (A1c)';
+    }
+
+    setState(() {
+      _a1cValue = double.parse(v.toStringAsFixed(1));
+      _a1cLabel = label;
+    });
+  }
+
+  // ============================ BLOOD PRESSURE ============================
+
+  void _calcBp() {
+    final sbp = int.tryParse(_sbpController.text.trim());
+    final dbp = int.tryParse(_dbpController.text.trim());
+
+    if (sbp == null || dbp == null || sbp <= 0 || dbp <= 0) {
+      setState(() {
+        _sbp = null;
+        _dbp = null;
+        _bpCategory = null;
+        _bpLabel = 'Enter valid numbers';
+      });
+      return;
+    }
+
+    // ACC/AHA categories:
+    // Normal: <120 and <80
+    // Elevated: 120–129 and <80
+    // Stage 1: 130–139 or 80–89
+    // Stage 2: >=140 or >=90
+    // Crisis: >=180 and/or >=120 (educational flag)
+    BpCategory cat;
+    String label;
+
+    if (sbp >= 180 || dbp >= 120) {
+      cat = BpCategory.crisis;
+      label = 'Hypertensive crisis (seek urgent care)';
+    } else if (sbp >= 140 || dbp >= 90) {
+      cat = BpCategory.stage2;
+      label = 'Hypertension (Stage 2)';
+    } else if ((sbp >= 130 && sbp <= 139) || (dbp >= 80 && dbp <= 89)) {
+      cat = BpCategory.stage1;
+      label = 'Hypertension (Stage 1)';
+    } else if (sbp >= 120 && sbp <= 129 && dbp < 80) {
+      cat = BpCategory.elevated;
+      label = 'Elevated BP';
+    } else {
+      cat = BpCategory.normal;
+      label = 'Normal BP';
+    }
+
+    setState(() {
+      _sbp = sbp;
+      _dbp = dbp;
+      _bpCategory = cat;
+      _bpLabel = label;
+    });
+  }
+
+  // ============================ HEART RISK (SCREENING SCORE) ============================
+  // This is NOT ASCVD PCE; it’s a lightweight screening score for UI context.
+
+  int _riskScore() {
+    final age = int.tryParse(_ageController.text.trim());
+    int score = 0;
+
+    // Age points
+    if (age != null) {
+      if (age < 30) score += 0;
+      else if (age < 40) score += 1;
+      else if (age < 50) score += 2;
+      else if (age < 60) score += 3;
+      else if (age < 70) score += 4;
+      else score += 5;
+    }
+
+    // Smoking
+    if (_smoker) score += 2;
+
+    // BP category points
+    switch (_bpCategory) {
+      case BpCategory.normal:
+        score += 0;
+        break;
+      case BpCategory.elevated:
+        score += 1;
+        break;
+      case BpCategory.stage1:
+        score += 2;
+        break;
+      case BpCategory.stage2:
+        score += 3;
+        break;
+      case BpCategory.crisis:
+        score += 5;
+        break;
+      case null:
+        break;
+    }
+
+    // Sugar / diabetes signal points
+    final diabetesFromA1c =
+        (_a1cValue != null && (_a1cValue! >= 6.5)) && _sugarMode == SugarInputMode.a1c;
+    final diabetesFromGlucose =
+        (_glucoseLabel != null && _glucoseLabel!.toLowerCase().contains('diabetes')) &&
+            _sugarMode == SugarInputMode.glucose;
+
+    if (diabetesFromA1c || diabetesFromGlucose) score += 3;
+    else {
+      final prediabetesFromA1c =
+          (_a1cValue != null && _a1cValue! >= 5.7 && _a1cValue! < 6.5) &&
+              _sugarMode == SugarInputMode.a1c;
+      final prediabetesFromGlucose =
+          (_glucoseLabel != null && _glucoseLabel!.toLowerCase().contains('prediabetes')) &&
+              _sugarMode == SugarInputMode.glucose;
+      if (prediabetesFromA1c || prediabetesFromGlucose) score += 1;
+    }
+
+    // BMI points
+    if (_bmi != null) {
+      if (_bmi! >= 30) {score += 2;}
+      else if (_bmi! >= 25) {score += 1;}
+    }
+
+    return score;
+  }
+
+  (String, Color) _riskBand(int score) {
+    if (score <= 2) return ('Low', Colors.green);
+    if (score <= 5) return ('Moderate', Colors.orange);
+    if (score <= 8) return ('High', Colors.red);
+    return ('Very High', const Color(0xFF7B1FA2));
+  }
+
+  // ============================ UI HELPERS ============================
+
+  Color _bmiColor(double bmi) {
+    if (bmi < 18.5) return Colors.lightBlue;
+    if (bmi < 25) return Colors.green;
+    if (bmi < 30) return Colors.orange;
+    return Colors.red;
+  }
+
+  (Color, String) _sugarChip() {
+    if (_sugarMode == SugarInputMode.glucose) {
+      if (_glucoseValue == null || _glucoseLabel == null) {
+        return (const Color(0xFF6B7C97), '');
+      }
+      final lower = _glucoseLabel!.toLowerCase();
+      if (lower.contains('normal') || lower.contains('typical')) {
+        return (Colors.green, _glucoseLabel!);
+      }
+      if (lower.contains('prediabetes') || lower.contains('elevated')) {
+        return (Colors.orange, _glucoseLabel!);
+      }
+      if (lower.contains('diabetes')) {
+        return (Colors.red, _glucoseLabel!);
+      }
+      return (const Color(0xFF6B7C97), _glucoseLabel!);
+    } else {
+      if (_a1cValue == null || _a1cLabel == null) return (const Color(0xFF6B7C97), '');
+      final lower = _a1cLabel!.toLowerCase();
+      if (lower.contains('normal')) return (Colors.green, _a1cLabel!);
+      if (lower.contains('prediabetes')) return (Colors.orange, _a1cLabel!);
+      if (lower.contains('diabetes')) return (Colors.red, _a1cLabel!);
+      return (const Color(0xFF6B7C97), _a1cLabel!);
+    }
+  }
+
+  Color _bpColor(BpCategory cat) {
+    switch (cat) {
+      case BpCategory.normal:
+        return Colors.green;
+      case BpCategory.elevated:
+        return Colors.orange;
+      case BpCategory.stage1:
+        return Colors.deepOrange;
+      case BpCategory.stage2:
+        return Colors.red;
+      case BpCategory.crisis:
+        return const Color(0xFF7B1FA2);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    const blue = Color(0xFF2F73FF);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF3F6FF),
       body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
-            _TopTitle(
-              title: 'Change Calculator',
-              subtitle: 'Medical Calculator',
-              icon: Icons.calculate_outlined,
-              onBack: () => Navigator.of(context).pop(),
-            ),
-            const SizedBox(height: 14),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _CardShell(
-                  child: Column(
-                    children: [
-                      _TabsHeader(controller: _tabController),
-                      const SizedBox(height: 14),
-                      Expanded(
-                        child: TabBarView(
-                          controller: _tabController,
-                          children: [
-                            _BmiTab(
-                              weightController: _weightController,
-                              heightController: _heightController,
-                              onCalculate: _calcBmi,
-                              bmi: _bmi,
-                              bmiLabel: _bmiLabel,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430), // phone-fit
+            child: Column(
+              children: [
+                _TopHeader(
+                  title: 'Health Calculator',
+                  subtitle: 'BMI • Sugar • BP • Risk',
+                  icon: Icons.calculate_outlined,
+                  onBack: () => Navigator.pop(context),
+                  color: blue,
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: _Card(
+                      child: Column(
+                        children: [
+                          _Tabs(controller: _tabController),
+                          const SizedBox(height: 14),
+                          Expanded(
+                            child: TabBarView(
+                              controller: _tabController,
+                              children: [
+                                _BmiTab(
+                                  sex: _sex,
+                                  onSexChanged: (s) => setState(() => _sex = s),
+                                  weight: _weightController,
+                                  height: _heightController,
+                                  bmi: _bmi,
+                                  label: _bmiLabel,
+                                  onCalc: _calcBmi,
+                                  colorForBmi: _bmiColor,
+                                ),
+                                _SugarTab(
+                                  mode: _sugarMode,
+                                  onModeChanged: (m) => setState(() => _sugarMode = m),
+                                  glucoseController: _glucoseController,
+                                  glucoseType: _glucoseType,
+                                  onGlucoseTypeChanged: (t) =>
+                                      setState(() => _glucoseType = t),
+                                  onCalcGlucose: _calcGlucose,
+                                  glucoseValue: _glucoseValue,
+                                  a1cController: _a1cController,
+                                  onCalcA1c: _calcA1c,
+                                  a1cValue: _a1cValue,
+                                  chip: _sugarChip(),
+                                ),
+                                _BpTab(
+                                  sbpController: _sbpController,
+                                  dbpController: _dbpController,
+                                  onCalc: _calcBp,
+                                  sbp: _sbp,
+                                  dbp: _dbp,
+                                  label: _bpLabel,
+                                  category: _bpCategory,
+                                  colorForCategory: _bpColor,
+                                ),
+                                _RiskTab(
+                                  ageController: _ageController,
+                                  sex: _sex,
+                                  onSexChanged: (s) => setState(() => _sex = s),
+                                  smoker: _smoker,
+                                  onSmokerChanged: (v) => setState(() => _smoker = v),
+                                  bmi: _bmi,
+                                  bmiLabel: _bmiLabel,
+                                  bpLabel: _bpLabel,
+                                  bpCategory: _bpCategory,
+                                  sugarMode: _sugarMode,
+                                  glucoseValue: _glucoseValue,
+                                  glucoseLabel: _glucoseLabel,
+                                  a1cValue: _a1cValue,
+                                  a1cLabel: _a1cLabel,
+                                  score: _riskScore(),
+                                  bandForScore: _riskBand,
+                                ),
+                              ],
                             ),
-                            const _PlaceholderTab(
-                              title: 'Dosage',
-                              subtitle: 'Not implemented yet',
-                              icon: Icons.medication_outlined,
-                            ),
-                            const _PlaceholderTab(
-                              title: 'Blood Sugar',
-                              subtitle: 'Not implemented yet',
-                              icon: Icons.monitor_heart_outlined,
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: Text(
-                'For medical guidance only - Consult your healthcare provider',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF4E6A8F),
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 10),
+                  child: Text(
+                    'Educational only — not a diagnosis.',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF4E6A8F),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _TopTitle extends StatelessWidget {
+// ====================== HEADER / SHELL ======================
+
+class _TopHeader extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
   final VoidCallback onBack;
+  final Color color;
 
-  const _TopTitle({
+  const _TopHeader({
     required this.title,
     required this.subtitle,
     required this.icon,
     required this.onBack,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    return Container(
+      color: color, // header background = blue
+      padding: const EdgeInsets.fromLTRB(8, 8, 16, 12),
       child: Row(
         children: [
           IconButton(
             onPressed: onBack,
-            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           ),
-          const Spacer(),
           Container(
-            width: 46,
-            height: 46,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFF2F73FF),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x22000000),
-                  blurRadius: 16,
-                  offset: Offset(0, 10),
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: Colors.white), // icon white
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, // left aligned
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: Color(0xE6FFFFFF),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
-            child: Icon(icon, color: Colors.white, size: 26),
           ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18.5,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1B2B55),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF5A6D8A),
-                ),
-              ),
-            ],
-          ),
-          const Spacer(flex: 2),
         ],
       ),
     );
   }
 }
 
-class _CardShell extends StatelessWidget {
-  final Widget child;
-
-  const _CardShell({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 245),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x22000000),
-            blurRadius: 18,
-            offset: Offset(0, 12),
-          ),
-        ],
-        border: Border.all(color: const Color(0xFFE6EEFF)),
-      ),
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-      child: child,
-    );
-  }
-}
-
-class _TabsHeader extends StatelessWidget {
+class _Tabs extends StatelessWidget {
   final TabController controller;
-
-  const _TabsHeader({required this.controller});
+  const _Tabs({required this.controller});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 58,
+      height: 54,
       decoration: BoxDecoration(
         color: const Color(0xFFF3F6FF),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE3EBFF)),
+        borderRadius: BorderRadius.circular(16),
       ),
-      padding: const EdgeInsets.all(4),
       child: TabBar(
         controller: controller,
         indicator: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 10,
-              offset: Offset(0, 6),
-            ),
-          ],
         ),
         labelColor: const Color(0xFF1B2B55),
         unselectedLabelColor: const Color(0xFF6B7C97),
-        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+        labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
         tabs: const [
           Tab(icon: Icon(Icons.monitor_weight_outlined, size: 18), text: 'BMI'),
-          Tab(icon: Icon(Icons.medication_outlined, size: 18), text: 'Dosage'),
-          Tab(icon: Icon(Icons.monitor_heart_outlined, size: 18), text: 'Blood Sugar'),
+          Tab(icon: Icon(Icons.bloodtype_outlined, size: 18), text: 'Sugar'),
+          Tab(icon: Icon(Icons.favorite_outline, size: 18), text: 'BP'),
+          Tab(icon: Icon(Icons.insights_outlined, size: 18), text: 'Risk'),
         ],
       ),
     );
   }
 }
 
-class _BmiTab extends StatelessWidget {
-  final TextEditingController weightController;
-  final TextEditingController heightController;
-  final VoidCallback onCalculate;
-  final double? bmi;
-  final String? bmiLabel;
-
-  const _BmiTab({
-    required this.weightController,
-    required this.heightController,
-    required this.onCalculate,
-    required this.bmi,
-    required this.bmiLabel,
-  });
+class _Card extends StatelessWidget {
+  final Widget child;
+  const _Card({required this.child});
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(6, 8, 6, 8),
-      child: Column(
-        children: [
-          const Text(
-            'Body Mass Index Calculator',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF21899C),
-            ),
-          ),
-          const SizedBox(height: 18),
-          _LabeledField(
-            label: 'Weight (kg)',
-            controller: weightController,
-            hint: 'Enter Weight',
-          ),
-          const SizedBox(height: 14),
-          _LabeledField(
-            label: 'Height (cm)',
-            controller: heightController,
-            hint: 'Enter Hight',
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0B84F3),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 0,
-              ),
-              onPressed: onCalculate,
-              child: const Text(
-                'Calculate',
-                style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          if (bmi != null) _BmiResult(bmi: bmi!, label: bmiLabel ?? ''),
-          if (bmi == null && bmiLabel != null) _ErrorText(text: bmiLabel!),
-          const SizedBox(height: 14),
-          const _InfoNote(
-            text:
-            'BMI is a screening tool and may not reflect body composition accurately for all individuals.',
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE6EEFF)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 16,
+            offset: Offset(0, 10),
           ),
         ],
       ),
+      child: child,
     );
   }
 }
 
-class _LabeledField extends StatelessWidget {
+// ====================== REUSABLE INPUT ======================
+
+class _NumberField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final String hint;
+  final String? suffix;
 
-  const _LabeledField({
+  const _NumberField({
     required this.label,
     required this.controller,
-    required this.hint,
+    this.hint = '',
+    this.suffix,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
+    return TextField(
+      controller: controller,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint.isEmpty ? null : hint,
+        suffixText: suffix,
+        filled: true,
+        fillColor: const Color(0xFFF7FAFF),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+}
+
+class _PrimaryButton extends StatelessWidget {
+  final String text;
+  final VoidCallback onTap;
+
+  const _PrimaryButton({required this.text, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF2F73FF),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 0,
+        ),
+        onPressed: onTap,
+        child: Text(
+          text,
           style: const TextStyle(
-            fontSize: 13.5,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1B2B55),
+            color: Colors.white, // calculate text white
+            fontWeight: FontWeight.w900,
+            fontSize: 15.5,
           ),
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            hintText: hint,
-            filled: true,
-            fillColor: const Color(0xFFF7FAFF),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFFE1ECFF)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFF0B84F3), width: 1.4),
+      ),
+    );
+  }
+}
+
+class _SegButton extends StatelessWidget {
+  final String text;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SegButton({
+    required this.text,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = selected ? const Color(0xFF2F73FF) : Colors.white;
+    final fg = selected ? Colors.white : const Color(0xFF1B2B55);
+    final border = selected ? const Color(0xFF2F73FF) : const Color(0xFFE1ECFF);
+
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: border),
+          ),
+          child: Center(
+            child: Text(
+              text,
+              style: TextStyle(fontWeight: FontWeight.w900, color: fg),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ChipBox extends StatelessWidget {
+  final Color color;
+  final String text;
+
+  const _ChipBox({required this.color, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+// ====================== BMI TAB ======================
+
+class _BmiTab extends StatelessWidget {
+  final Sex sex;
+  final ValueChanged<Sex> onSexChanged;
+  final TextEditingController weight;
+  final TextEditingController height;
+  final double? bmi;
+  final String? label;
+  final VoidCallback onCalc;
+  final Color Function(double) colorForBmi;
+
+  const _BmiTab({
+    required this.sex,
+    required this.onSexChanged,
+    required this.weight,
+    required this.height,
+    required this.bmi,
+    required this.label,
+    required this.onCalc,
+    required this.colorForBmi,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7FAFF),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE1ECFF)),
+          ),
+          child: Row(
+            children: [
+              _SegButton(
+                text: 'Male',
+                selected: sex == Sex.male,
+                onTap: () => onSexChanged(Sex.male),
+              ),
+              const SizedBox(width: 8),
+              _SegButton(
+                text: 'Female',
+                selected: sex == Sex.female,
+                onTap: () => onSexChanged(Sex.female),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _NumberField(label: 'Weight', controller: weight, hint: '70', suffix: 'kg'),
+        const SizedBox(height: 12),
+        _NumberField(label: 'Height', controller: height, hint: '170', suffix: 'cm'),
+        const SizedBox(height: 14),
+        _PrimaryButton(text: 'Calculate', onTap: onCalc),
+        const SizedBox(height: 14),
+        if (bmi != null && label != null)
+          _ChipBox(
+            color: colorForBmi(bmi!),
+            text: 'BMI: ${bmi!.toStringAsFixed(1)} • $label',
+          ),
+        if (bmi == null && label != null)
+          const SizedBox.shrink(),
       ],
     );
   }
 }
 
-class _BmiResult extends StatelessWidget {
-  final double bmi;
-  final String label;
+// ====================== SUGAR TAB (Glucose + A1c) ======================
 
-  const _BmiResult({required this.bmi, required this.label});
+class _SugarTab extends StatelessWidget {
+  final SugarInputMode mode;
+  final ValueChanged<SugarInputMode> onModeChanged;
 
-  @override
-  Widget build(BuildContext context) {
-    final v = bmi.clamp(10, 45);
-    final pct = (v - 10) / (45 - 10);
+  final TextEditingController glucoseController;
+  final GlucoseTestType glucoseType;
+  final ValueChanged<GlucoseTestType> onGlucoseTypeChanged;
+  final VoidCallback onCalcGlucose;
+  final double? glucoseValue;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F6FF),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE1ECFF)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Your BMI: $bmi',
-            style: const TextStyle(
-              fontSize: 14.5,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF1B2B55),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF5A6D8A),
-            ),
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: SizedBox(
-              height: 10,
-              child: Stack(
-                children: [
-                  Container(color: const Color(0xFFE6EEFF)),
-                  FractionallySizedBox(
-                    widthFactor: max(0.02, pct),
-                    child: Container(color: const Color(0xFF0B84F3)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+  final TextEditingController a1cController;
+  final VoidCallback onCalcA1c;
+  final double? a1cValue;
 
-class _InfoNote extends StatelessWidget {
-  final String text;
+  final (Color, String) chip;
 
-  const _InfoNote({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7FAFF),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE1ECFF)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.info_outline, color: Color(0xFF1B2B55), size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                fontSize: 12.8,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF445C7D),
-                height: 1.35,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorText extends StatelessWidget {
-  final String text;
-
-  const _ErrorText({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 4),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.red,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _PlaceholderTab extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-
-  const _PlaceholderTab({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
+  const _SugarTab({
+    required this.mode,
+    required this.onModeChanged,
+    required this.glucoseController,
+    required this.glucoseType,
+    required this.onGlucoseTypeChanged,
+    required this.onCalcGlucose,
+    required this.glucoseValue,
+    required this.a1cController,
+    required this.onCalcA1c,
+    required this.a1cValue,
+    required this.chip,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.all(8),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF7FAFF),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE1ECFF)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEAF2FF),
-                borderRadius: BorderRadius.circular(16),
+    final (c, txt) = chip;
+
+    return ListView(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7FAFF),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE1ECFF)),
+          ),
+          child: Row(
+            children: [
+              _SegButton(
+                text: 'Glucose',
+                selected: mode == SugarInputMode.glucose,
+                onTap: () => onModeChanged(SugarInputMode.glucose),
               ),
-              child: Icon(icon, color: const Color(0xFF2F73FF)),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1B2B55),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF5A6D8A),
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 8),
+              _SegButton(
+                text: 'HbA1c',
+                selected: mode == SugarInputMode.a1c,
+                onTap: () => onModeChanged(SugarInputMode.a1c),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+        const SizedBox(height: 12),
+
+        if (mode == SugarInputMode.glucose) ...[
+          DropdownButtonFormField<GlucoseTestType>(
+            value: glucoseType,
+            items: const [
+              DropdownMenuItem(
+                value: GlucoseTestType.fasting,
+                child: Text('Fasting (FPG)'),
+              ),
+              DropdownMenuItem(
+                value: GlucoseTestType.ogtt2h,
+                child: Text('2-hour OGTT'),
+              ),
+              DropdownMenuItem(
+                value: GlucoseTestType.random,
+                child: Text('Random / Casual'),
+              ),
+            ],
+            onChanged: (v) {
+              if (v != null) onGlucoseTypeChanged(v);
+            },
+            decoration: const InputDecoration(
+              labelText: 'Test Type',
+              filled: true,
+              fillColor: Color(0xFFF7FAFF),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _NumberField(
+            label: 'Glucose',
+            controller: glucoseController,
+            hint: '95',
+            suffix: 'mg/dL',
+          ),
+          const SizedBox(height: 14),
+          _PrimaryButton(text: 'Calculate', onTap: onCalcGlucose),
+        ] else ...[
+          _NumberField(
+            label: 'HbA1c',
+            controller: a1cController,
+            hint: '5.6',
+            suffix: '%',
+          ),
+          const SizedBox(height: 14),
+          _PrimaryButton(text: 'Calculate', onTap: onCalcA1c),
+        ],
+
+        const SizedBox(height: 14),
+        if (txt.isNotEmpty) _ChipBox(color: c, text: txt),
+      ],
     );
+  }
+}
+
+// ====================== BP TAB ======================
+
+class _BpTab extends StatelessWidget {
+  final TextEditingController sbpController;
+  final TextEditingController dbpController;
+  final VoidCallback onCalc;
+
+  final int? sbp;
+  final int? dbp;
+  final String? label;
+  final BpCategory? category;
+  final Color Function(BpCategory) colorForCategory;
+
+  const _BpTab({
+    required this.sbpController,
+    required this.dbpController,
+    required this.onCalc,
+    required this.sbp,
+    required this.dbp,
+    required this.label,
+    required this.category,
+    required this.colorForCategory,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        _NumberField(label: 'Systolic (SBP)', controller: sbpController, hint: '120', suffix: 'mmHg'),
+        const SizedBox(height: 12),
+        _NumberField(label: 'Diastolic (DBP)', controller: dbpController, hint: '80', suffix: 'mmHg'),
+        const SizedBox(height: 14),
+        _PrimaryButton(text: 'Calculate', onTap: onCalc),
+        const SizedBox(height: 14),
+        if (category != null && label != null && sbp != null && dbp != null)
+          _ChipBox(
+            color: colorForCategory(category!),
+            text: 'BP: $sbp/$dbp • $label',
+          ),
+      ],
+    );
+  }
+}
+
+// ====================== RISK TAB ======================
+
+class _RiskTab extends StatelessWidget {
+  final TextEditingController ageController;
+
+  final Sex sex;
+  final ValueChanged<Sex> onSexChanged;
+
+  final bool smoker;
+  final ValueChanged<bool> onSmokerChanged;
+
+  final double? bmi;
+  final String? bmiLabel;
+
+  final String? bpLabel;
+  final BpCategory? bpCategory;
+
+  final SugarInputMode sugarMode;
+  final double? glucoseValue;
+  final String? glucoseLabel;
+  final double? a1cValue;
+  final String? a1cLabel;
+
+  final int score;
+  final (String, Color) Function(int) bandForScore;
+
+  const _RiskTab({
+  required this.ageController,
+  required this.sex,
+  required this.onSexChanged,
+  required this.smoker,
+  required this.onSmokerChanged,
+  required this.bmi,
+  required this.bmiLabel,
+  required this.bpLabel,
+  required this.bpCategory,
+  required this.sugarMode,
+  required this.glucoseValue,
+  required this.glucoseLabel,
+  required this.a1cValue,
+  required this.a1cLabel,
+  required this.score,
+  required this.bandForScore,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+  final (band, color) = bandForScore(score);
+
+  String sugarSummary = 'Not set';
+  if (sugarMode == SugarInputMode.glucose && glucoseValue != null && glucoseLabel != null) {
+  sugarSummary = '${glucoseValue!.toStringAsFixed(0)} mg/dL • $glucoseLabel';
+  } else if (sugarMode == SugarInputMode.a1c && a1cValue != null && a1cLabel != null) {
+  sugarSummary = '${a1cValue!.toStringAsFixed(1)}% • $a1cLabel';
+  }
+
+  String bmiSummary = 'Not set';
+  if (bmi != null && bmiLabel != null) {
+  bmiSummary = '${bmi!.toStringAsFixed(1)} • $bmiLabel';
+  }
+
+  String bpSummary = bpLabel ?? 'Not set';
+
+  return ListView(
+  children: [
+  _NumberField(label: 'Age', controller: ageController, hint: '35', suffix: 'years'),
+  const SizedBox(height: 12),
+
+  Container(
+  padding: const EdgeInsets.all(6),
+  decoration: BoxDecoration(
+  color: const Color(0xFFF7FAFF),
+  borderRadius: BorderRadius.circular(16),
+  border: Border.all(color: const Color(0xFFE1ECFF)),
+  ),
+  child: Row(
+  children: [
+  _SegButton(
+  text: 'Male',
+  selected: sex == Sex.male,
+  onTap: () => onSexChanged(Sex.male),
+  ),
+  const SizedBox(width: 8),
+  _SegButton(
+  text: 'Female',
+  selected: sex == Sex.female,
+  onTap: () => onSexChanged(Sex.female),
+  ),
+  ],
+  ),
+  ),
+
+  const SizedBox(height: 12),
+
+  SwitchListTile(
+  value: smoker,
+  onChanged: onSmokerChanged,
+  title: const Text(
+  'Smoker',
+  style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF1B2B55)),
+  ),
+  subtitle: const Text('Toggles risk score contribution'),
+  activeColor: const Color(0xFF2F73FF),
+  contentPadding: EdgeInsets.zero,
+  ),
+
+  const SizedBox(height: 10),
+
+  Container(
+  padding: const EdgeInsets.all(14),
+  decoration: BoxDecoration(
+  color: const Color(0xFFF7FAFF),
+  borderRadius: BorderRadius.circular(16),
+  border: Border.all(color: const Color(0xFFE1ECFF)),
+  ),
+  child: Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+  const Text(
+  'Inputs used (from other tabs)',
+  style: TextStyle(
+  fontWeight: FontWeight.w900,
+  color: Color(0xFF1B2B55),
+  ),
+  ),
+  const SizedBox(height: 10),
+  _kv('BMI', bmiSummary),
+  const SizedBox(height: 6),
+  _kv('Blood Pressure', bpSummary),
+  const SizedBox(height: 6),
+  _kv('Blood Sugar', sugarSummary),
+  ],
+  ),
+  ),
+
+  const SizedBox(height: 14),
+
+  _ChipBox(
+  color: color,
+  text: 'Screening Score: $score • $band',
+  ),
+
+  const SizedBox(height: 12),
+
+  const Text(
+  'This is a simplified screening score, not a clinical ASCVD calculator. For official 10-year ASCVD risk, use a validated tool with cholesterol inputs.',
+  style: TextStyle(
+  fontSize: 12.5,
+  fontWeight: FontWeight.w600,
+  color: Color(0xFF4E6A8F),
+  height: 1.35,
+  ),
+  ),
+  ],
+  );
+  }
+
+  Widget _kv(String k, String v) {
+  return Row(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+  SizedBox(
+  width: 120,
+  child: Text(
+  k,
+  style: const TextStyle(
+  fontWeight: FontWeight.w800,
+  color: Color(0xFF1B2B55),
+  ),
+  ),
+  ),
+  Expanded(
+  child: Text(
+  v,
+  style: const TextStyle(
+  fontWeight: FontWeight.w700,
+  color: Color(0xFF5A6D8A),
+  ),
+  ),
+  ),
+  ],
+  );
   }
 }
