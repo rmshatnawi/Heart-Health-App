@@ -1,90 +1,143 @@
 // lib/src/pages/medical_info.dart
 import 'package:flutter/material.dart';
+import '../components/app_menu.dart';
+
+import 'symptoms.dart';
+import 'diseases.dart';
+import 'medications.dart';
+import 'prevention_tips.dart';
+import 'heart_health.dart';
+import 'lab_tests.dart';
+import 'hydration.dart';
+import 'health_info.dart';
 
 class MedicalInfoPage extends StatelessWidget {
   const MedicalInfoPage({super.key});
+
+  static const _cardMaxWidth = 520.0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F6FF),
       body: SafeArea(
-        child: Column(
-          children: [
-            const _Header(),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                children: const [
-                  Text(
-                    'Access trusted medical information at your fingertips',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF5B677A),
-                      fontWeight: FontWeight.w500,
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(18),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: _cardMaxWidth),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const _Header(),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 230),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(22),
+                        bottomRight: Radius.circular(22),
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x14000000),
+                          blurRadius: 14,
+                          offset: Offset(0, 8),
+                        ),
+                      ],
                     ),
-                  ),
-                  SizedBox(height: 14),
-                  _MedicalItem(
-                    title: 'Symptoms',
-                    subtitle: 'Track and understand your symptoms',
-                    icon: Icons.monitor_heart_outlined,
-                    iconBg: Color(0xFFEAF2FF),
-                    iconColor: Color(0xFF2F73FF),
-                  ),
-                  _MedicalItem(
-                    title: 'Diseases',
-                    subtitle: 'Learn about common conditions',
-                    icon: Icons.medical_services_outlined,
-                    iconBg: Color(0xFFE9FBF6),
-                    iconColor: Color(0xFF1BAA8B),
-                  ),
-                  _MedicalItem(
-                    title: 'Medications',
-                    subtitle: 'Medicine information and usage',
-                    icon: Icons.local_pharmacy_outlined,
-                    iconBg: Color(0xFFEFF0FF),
-                    iconColor: Color(0xFF6D5AE6),
-                  ),
-                  _MedicalItem(
-                    title: 'Prevention Tips',
-                    subtitle: 'Stay healthy and safe',
-                    icon: Icons.shield_outlined,
-                    iconBg: Color(0xFFE8FFF8),
-                    iconColor: Color(0xFF00A38A),
-                  ),
-                  _MedicalItem(
-                    title: 'Heart Health',
-                    subtitle: 'Cardiovascular care tips',
-                    icon: Icons.favorite_border,
-                    iconBg: Color(0xFFFFEFF2),
-                    iconColor: Color(0xFFE53935),
-                  ),
-                  _MedicalItem(
-                    title: 'Lab Tests',
-                    subtitle: 'Understanding your test results',
-                    icon: Icons.assignment_outlined,
-                    iconBg: Color(0xFFEAF7FF),
-                    iconColor: Color(0xFF0B84F3),
-                  ),
-                  _MedicalItem(
-                    title: 'Hydration',
-                    subtitle: 'Daily water intake guide',
-                    icon: Icons.water_drop_outlined,
-                    iconBg: Color(0xFFEEF5FF),
-                    iconColor: Color(0xFF2D7CFF),
-                  ),
-                  _MedicalItem(
-                    title: 'Health Info',
-                    subtitle: 'General health knowledge',
-                    icon: Icons.info_outline,
-                    iconBg: Color(0xFFF2EAFF),
-                    iconColor: Color(0xFF8E44FF),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 14),
+
+                        _MedicalItem(
+                          title: 'Symptoms',
+                          subtitle: 'Track and understand your symptoms',
+                          icon: Icons.monitor_heart_outlined,
+                          iconBg: const Color(0xFFEAF2FF),
+                          iconColor: const Color(0xFF2F73FF),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const SymptomsPage()),
+                          ),
+                        ),
+                        _MedicalItem(
+                          title: 'Diseases',
+                          subtitle: 'Learn about common conditions',
+                          icon: Icons.medical_services_outlined,
+                          iconBg: const Color(0xFFE9FBF6),
+                          iconColor: const Color(0xFF1BAA8B),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const DiseasesPage()),
+                          ),
+                        ),
+                        _MedicalItem(
+                          title: 'Medications',
+                          subtitle: 'Medicine information and usage',
+                          icon: Icons.local_pharmacy_outlined,
+                          iconBg: const Color(0xFFEFF0FF),
+                          iconColor: const Color(0xFF6D5AE6),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const MedicationsPage()),
+                          ),
+                        ),
+                        _MedicalItem(
+                          title: 'Prevention Tips',
+                          subtitle: 'Stay healthy and safe',
+                          icon: Icons.shield_outlined,
+                          iconBg: const Color(0xFFE8FFF8),
+                          iconColor: const Color(0xFF00A38A),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const PreventionTipsPage()),
+                          ),
+                        ),
+                        _MedicalItem(
+                          title: 'Heart Health',
+                          subtitle: 'Cardiovascular care tips',
+                          icon: Icons.favorite_border,
+                          iconBg: const Color(0xFFFFEFF2),
+                          iconColor: const Color(0xFFE53935),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const HeartHealthPage()),
+                          ),
+                        ),
+                        _MedicalItem(
+                          title: 'Lab Tests',
+                          subtitle: 'Understanding your test results',
+                          icon: Icons.assignment_outlined,
+                          iconBg: const Color(0xFFEAF7FF),
+                          iconColor: const Color(0xFF0B84F3),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const LabTestsPage()),
+                          ),
+                        ),
+                        _MedicalItem(
+                          title: 'Hydration',
+                          subtitle: 'Daily water intake guide',
+                          icon: Icons.water_drop_outlined,
+                          iconBg: const Color(0xFFEEF5FF),
+                          iconColor: const Color(0xFF2D7CFF),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const HydrationPage()),
+                          ),
+                        ),
+                        _MedicalItem(
+                          title: 'Health Info',
+                          subtitle: 'General health knowledge',
+                          icon: Icons.info_outline,
+                          iconBg: const Color(0xFFF2EAFF),
+                          iconColor: const Color(0xFF8E44FF),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const HealthInfoPage()),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -98,19 +151,16 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 18),
       decoration: const BoxDecoration(
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(22),
-          bottomRight: Radius.circular(22),
+          topLeft: Radius.circular(22),
+          topRight: Radius.circular(22),
         ),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF2F73FF),
-            Color(0xFF1F66F2),
-          ],
+          colors: [Color(0xFF2F73FF), Color(0xFF1F66F2)],
         ),
         boxShadow: [
           BoxShadow(
@@ -126,7 +176,7 @@ class _Header extends StatelessWidget {
             onPressed: () => Navigator.of(context).pop(),
             icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 2),
           const Expanded(
             child: Text(
               'Medical Info',
@@ -137,17 +187,19 @@ class _Header extends StatelessWidget {
               ),
             ),
           ),
-          Container(
+
+          const AppMenuButton(iconColor: Colors.white),
+
+          const SizedBox(width: 8),
+          SizedBox(
             width: 44,
             height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 46),
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(
-              Icons.medical_services_outlined,
-              color: Colors.white,
-              size: 24,
+              child: Image.asset(
+                'assets/images/logonly.png',
+                fit: BoxFit.cover,
+              ),
             ),
           ),
         ],
@@ -162,6 +214,7 @@ class _MedicalItem extends StatelessWidget {
   final IconData icon;
   final Color iconBg;
   final Color iconColor;
+  final VoidCallback? onTap;
 
   const _MedicalItem({
     required this.title,
@@ -169,6 +222,7 @@ class _MedicalItem extends StatelessWidget {
     required this.icon,
     required this.iconBg,
     required this.iconColor,
+    this.onTap,
   });
 
   @override
@@ -188,9 +242,7 @@ class _MedicalItem extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        onTap: () {
-          // TODO: navigate to each section later
-        },
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Row(
