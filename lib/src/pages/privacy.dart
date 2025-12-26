@@ -5,7 +5,7 @@ import '../components/app_menu.dart';
 class PrivacyPage extends StatelessWidget {
   const PrivacyPage({super.key});
 
-  static const _cardMaxWidth = 520.0;
+  static const _cardMaxWidth = 430.0; // phone-fit (only change)
 
   @override
   Widget build(BuildContext context) {

@@ -68,55 +68,38 @@ class _MedicalConsultationPageState extends State<MedicalConsultationPage> {
 
   @override
   Widget build(BuildContext context) {
+    const blue = Color(0xFF2F73FF);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FF),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'Medical Consultation',
-          style: TextStyle(
-            color: Color(0xFF0F172A),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 10),
-          _buildFilters(),
-          const SizedBox(height: 12),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final w = constraints.maxWidth;
-                final crossAxisCount = w >= 1100
-                    ? 3
-                    : w >= 700
-                    ? 2
-                    : 1;
-
-                return GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: crossAxisCount == 1 ? 1.12 : 1.05,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430), // phone-fit
+            child: Column(
+              children: [
+                _TopHeader(
+                  title: 'Medical Consultation',
+                  subtitle: 'Choose a doctor and start a session',
+                  icon: Icons.medical_information_outlined,
+                  headerColor: blue, // header bg = blue
+                  onBack: () => Navigator.of(context).pop(),
+                ),
+                const SizedBox(height: 10),
+                _buildFilters(),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    itemCount: _filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    itemBuilder: (context, i) => _DoctorCard(doctor: _filtered[i]),
                   ),
-                  itemCount: _filtered.length,
-                  itemBuilder: (context, i) => _DoctorCard(doctor: _filtered[i]),
-                );
-              },
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -137,7 +120,7 @@ class _MedicalConsultationPageState extends State<MedicalConsultationPage> {
               selected: selected,
               onSelected: (_) => setState(() => _filterIndex = i),
               labelStyle: TextStyle(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 color: selected ? Colors.white : const Color(0xFF475569),
               ),
               backgroundColor: Colors.white,
@@ -157,6 +140,72 @@ class _MedicalConsultationPageState extends State<MedicalConsultationPage> {
   }
 }
 
+class _TopHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color headerColor;
+  final VoidCallback onBack;
+
+  const _TopHeader({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.headerColor,
+    required this.onBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: headerColor,
+      padding: const EdgeInsets.fromLTRB(8, 8, 16, 12),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: onBack,
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          ),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, // left aligned
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xE6FFFFFF),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DoctorCard extends StatelessWidget {
   final _Doctor doctor;
   const _DoctorCard({required this.doctor});
@@ -164,6 +213,7 @@ class _DoctorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 360, // fixed phone-friendly height
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -190,7 +240,11 @@ class _DoctorCard extends StatelessWidget {
                       errorBuilder: (_, __, ___) => Container(
                         color: const Color(0xFFEFF6FF),
                         alignment: Alignment.center,
-                        child: const Icon(Icons.person, size: 54, color: Color(0xFF94A3B8)),
+                        child: const Icon(
+                          Icons.person,
+                          size: 54,
+                          color: Color(0xFF94A3B8),
+                        ),
                       ),
                     ),
                   ),
@@ -215,7 +269,7 @@ class _DoctorCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w900,
                         color: Color(0xFF0F172A),
                       ),
                     ),
@@ -236,7 +290,7 @@ class _DoctorCard extends StatelessWidget {
                         Text(
                           doctor.rating.toStringAsFixed(1),
                           style: const TextStyle(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w900,
                             color: Color(0xFF0F172A),
                           ),
                         ),
@@ -322,7 +376,7 @@ class _DoctorCard extends StatelessWidget {
         style: TextStyle(
           color: fg,
           fontSize: 12,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w900,
         ),
       ),
     );
@@ -353,7 +407,7 @@ class _DoctorCard extends StatelessWidget {
               label,
               style: TextStyle(
                 color: fg,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w900,
                 fontSize: 13,
               ),
             ),

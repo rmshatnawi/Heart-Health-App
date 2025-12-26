@@ -12,10 +12,15 @@ import 'consultation.dart';
 import 'patient_care.dart';
 import 'login.dart';
 
+
+import 'profile.dart' as profile_page;
+import 'settings.dart' as settings_page;
+import 'privacy.dart' as privacy_page;
+
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  static const _cardMaxWidth = 520.0;
+  static const _cardMaxWidth = 430.0; // phone-fit (only change)
   static const _accent = Color(0xFF21899C);
   static const _tileBlue = Color(0xFF2F73FF);
 
@@ -47,7 +52,7 @@ class HomePage extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _HeaderMenu(),
+                      const _HeaderMenu(),
                       const SizedBox(height: 14),
                       const Text(
                         'Healthcare Services',
@@ -59,13 +64,9 @@ class HomePage extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // Fixed "phone-like" grid inside a fixed-width card
                       LayoutBuilder(
                         builder: (context, constraints) {
-                          // inside the fixed card, use a stable 3 columns
                           const crossAxisCount = 3;
-
-                          // Fixed tile shape (prevents “web-like stretching”)
                           const childAspectRatio = 0.86;
 
                           return GridView(
@@ -191,19 +192,19 @@ class _HeaderMenu extends StatelessWidget {
             switch (action) {
               case _HomeMenuAction.profile:
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ProfilePage()),
+                  MaterialPageRoute(builder: (_) => const profile_page.ProfilePage()),
                 );
                 break;
 
               case _HomeMenuAction.settings:
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SettingsPage()),
+                  MaterialPageRoute(builder: (_) => const settings_page.SettingsPage()),
                 );
                 break;
 
               case _HomeMenuAction.privacy:
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const PrivacyPage()),
+                  MaterialPageRoute(builder: (_) => const privacy_page.PrivacyPage()),
                 );
                 break;
 
@@ -275,7 +276,6 @@ class _HeaderMenu extends StatelessWidget {
   }
 }
 
-
 enum _HomeMenuAction { profile, settings, privacy, logout }
 
 class _HomeTile extends StatelessWidget {
@@ -327,103 +327,6 @@ class _HomeTile extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/* =========================
-   Simple pages (no errors)
-   ========================= */
-
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        backgroundColor: const Color(0xFF21899C),
-        foregroundColor: Colors.white,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Card(
-          child: ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: Text(user?.email ?? 'No email'),
-            subtitle: Text(user?.uid ?? ''),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: const Color(0xFF21899C),
-        foregroundColor: Colors.white,
-      ),
-      body: const Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          children: [
-            ListTile(
-              leading: Icon(Icons.notifications_none),
-              title: Text('Notifications'),
-              subtitle: Text('Basic placeholder'),
-            ),
-            Divider(),
-            ListTile(
-              leading: Icon(Icons.palette_outlined),
-              title: Text('Appearance'),
-              subtitle: Text('Basic placeholder'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class PrivacyPage extends StatelessWidget {
-  const PrivacyPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Privacy'),
-        backgroundColor: const Color(0xFF21899C),
-        foregroundColor: Colors.white,
-      ),
-      body: const Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          children: [
-            ListTile(
-              leading: Icon(Icons.lock_outline),
-              title: Text('Privacy Policy'),
-              subtitle: Text('Basic placeholder'),
-            ),
-            Divider(),
-            ListTile(
-              leading: Icon(Icons.shield_outlined),
-              title: Text('Data Controls'),
-              subtitle: Text('Basic placeholder'),
-            ),
-          ],
         ),
       ),
     );

@@ -6,7 +6,7 @@ import '../components/app_menu.dart';
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
-  static const _cardMaxWidth = 520.0;
+  static const _cardMaxWidth = 430.0; // phone-fit only
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +38,10 @@ class ProfilePage extends StatelessWidget {
                         const Expanded(
                           child: Text(
                             'Profile',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                         const AppMenuButton(),

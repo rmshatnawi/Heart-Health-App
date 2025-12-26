@@ -6,10 +6,10 @@ class InfoSection {
   final String title;
   final String subtitle;
 
-  /// Color of the section header strip.
+
   final Color headerBg;
 
-  /// Optional: color used for item titles/icons. If null, headerBg is used.
+
   final Color? accent;
 
   final List<InfoItem> items;
@@ -50,7 +50,7 @@ class SimpleInfoPage extends StatelessWidget {
   final IconData headerIcon;
   final List<Color> gradient;
 
-  // Optional: when provided, show real designed content
+
   final List<InfoSection>? sections;
 
   static const _cardMaxWidth = 520.0;
@@ -76,7 +76,7 @@ class SimpleInfoPage extends StatelessWidget {
                     showBack: true,
                   ),
 
-                  // Content container under the header (phone-like fixed card)
+
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 230),
