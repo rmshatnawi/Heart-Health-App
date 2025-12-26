@@ -1,4 +1,9 @@
+// lib/src/pages/patient_care.dart
 import 'package:flutter/material.dart';
+
+import 'settings.dart';
+import 'profile.dart';
+import 'privacy.dart';
 
 class PatientCarePage extends StatefulWidget {
   const PatientCarePage({super.key});
@@ -8,12 +13,14 @@ class PatientCarePage extends StatefulWidget {
 }
 
 class _PatientCarePageState extends State<PatientCarePage> {
+  static const double _phoneMaxWidth = 430.0;
+
   final List<_ReminderItem> _reminders = [
     _ReminderItem(
       title: 'Take Morning Medication',
       time: '08:00 AM',
       tag: 'medication',
-      done: true,
+      done: false,
     ),
     _ReminderItem(
       title: 'Blood Pressure Check',
@@ -37,28 +44,45 @@ class _PatientCarePageState extends State<PatientCarePage> {
 
   @override
   Widget build(BuildContext context) {
-    const blue = Color(0xFF2F73FF);
-
     return Scaffold(
       backgroundColor: const Color(0xFFF3F6FF),
+
+      // IMPORTANT: no AppBar here.
+      // We render a phone-width header inside the body so it does NOT stretch on web.
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430), // phone-fit
+            constraints: const BoxConstraints(maxWidth: _phoneMaxWidth),
             child: Column(
               children: [
-                _TopHeader(
-                  title: 'Patient Care',
-                  subtitle: 'Daily plans, reminders, and support',
-                  icon: Icons.favorite,
-                  headerColor: blue, // header bg = icon color (blue)
+                _PhoneHeader(
                   onBack: () => Navigator.of(context).pop(),
-                  onNotifications: () {},
-                  onProfile: () {},
+                  onMenu: (action) async {
+                    switch (action) {
+                      case _MenuAction.profile:
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const ProfilePage()),
+                        );
+                        break;
+                      case _MenuAction.settings:
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const SettingsPage()),
+                        );
+                        break;
+                      case _MenuAction.privacy:
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const PrivacyPage()),
+                        );
+                        break;
+                      case _MenuAction.logout:
+                      // Put your logout logic here if you need it.
+                        break;
+                    }
+                  },
                 ),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
                     child: Column(
                       children: [
                         _HeroBanner(
@@ -71,8 +95,9 @@ class _PatientCarePageState extends State<PatientCarePage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        _StatsGrid(
-                          items: const [
+
+                        const _StatsRow(
+                          items: [
                             _StatCardData(
                               value: '3',
                               label: 'Active Care Plans',
@@ -93,7 +118,7 @@ class _PatientCarePageState extends State<PatientCarePage> {
                             ),
                             _StatCardData(
                               value: '3',
-                              label: 'Care Team',
+                              label: 'Care Team Members',
                               badge: 'Available',
                               icon: Icons.groups,
                               badgeColor: Color(0xFFFFF2E6),
@@ -111,7 +136,9 @@ class _PatientCarePageState extends State<PatientCarePage> {
                             ),
                           ],
                         ),
+
                         const SizedBox(height: 16),
+
                         _SectionHeader(
                           icon: Icons.health_and_safety,
                           title: 'Active Care Plans',
@@ -119,6 +146,7 @@ class _PatientCarePageState extends State<PatientCarePage> {
                           onAction: () {},
                         ),
                         const SizedBox(height: 10),
+
                         _CarePlanCard(
                           title: 'Post-Surgery Recovery',
                           subtitle:
@@ -135,10 +163,10 @@ class _PatientCarePageState extends State<PatientCarePage> {
                           onDetails: () {},
                         ),
                         const SizedBox(height: 12),
+
                         _CarePlanCard(
                           title: 'Diabetes Management',
-                          subtitle:
-                          'Blood sugar monitoring, diet planning, and regular check-ups',
+                          subtitle: 'Blood sugar monitoring, diet planning, and regular check-ups',
                           progress: 0.80,
                           nextDate: 'Dec 20, 2025',
                           statusText: 'active',
@@ -151,10 +179,10 @@ class _PatientCarePageState extends State<PatientCarePage> {
                           onDetails: () {},
                         ),
                         const SizedBox(height: 12),
+
                         _CarePlanCard(
                           title: 'Cardiac Care Program',
-                          subtitle:
-                          'Heart health monitoring and lifestyle modification guidance',
+                          subtitle: 'Heart health monitoring and lifestyle modification guidance',
                           progress: 0.45,
                           nextDate: 'Dec 25, 2025',
                           statusText: 'active',
@@ -166,7 +194,9 @@ class _PatientCarePageState extends State<PatientCarePage> {
                           progressColor: const Color(0xFFE11D48),
                           onDetails: () {},
                         ),
+
                         const SizedBox(height: 16),
+
                         _SectionHeader(
                           icon: Icons.notifications_active_outlined,
                           title: 'Today\'s Reminders',
@@ -174,6 +204,7 @@ class _PatientCarePageState extends State<PatientCarePage> {
                           onAction: () {},
                         ),
                         const SizedBox(height: 10),
+
                         _ReminderList(
                           items: _reminders,
                           onToggle: (index, value) {
@@ -182,70 +213,6 @@ class _PatientCarePageState extends State<PatientCarePage> {
                             });
                           },
                         ),
-                        const SizedBox(height: 16),
-                        _SectionHeader(
-                          icon: Icons.groups_2_outlined,
-                          title: 'Your Care Team',
-                          actionText: null,
-                          onAction: null,
-                        ),
-                        const SizedBox(height: 10),
-                        _CareTeamCard(
-                          name: 'Dr. Sarah Johnson',
-                          role: 'Primary Care Physician',
-                          image: const NetworkImage(
-                            'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=60',
-                          ),
-                          online: true,
-                        ),
-                        const SizedBox(height: 12),
-                        _CareTeamCard(
-                          name: 'Michael Chen',
-                          role: 'Physical Therapist',
-                          image: const NetworkImage(
-                            'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=60',
-                          ),
-                          online: true,
-                        ),
-                        const SizedBox(height: 12),
-                        _CareTeamCard(
-                          name: 'Emily Rodriguez',
-                          role: 'Registered Nurse',
-                          image: const NetworkImage(
-                            'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=60',
-                          ),
-                          online: true,
-                        ),
-                        const SizedBox(height: 16),
-                        _SectionHeader(
-                          icon: Icons.favorite_border,
-                          title: 'Support Resources',
-                          actionText: null,
-                          onAction: null,
-                        ),
-                        const SizedBox(height: 10),
-                        _ResourceTile(
-                          icon: Icons.description_outlined,
-                          title: 'Understanding Your Care Plan',
-                          subtitle: 'Learn about your personalized treatment journey',
-                          onTap: () {},
-                        ),
-                        const SizedBox(height: 10),
-                        _ResourceTile(
-                          icon: Icons.family_restroom_outlined,
-                          title: 'Family Support Resources',
-                          subtitle: 'Tools and information for family caregivers',
-                          onTap: () {},
-                        ),
-                        const SizedBox(height: 10),
-                        _ResourceTile(
-                          icon: Icons.call_outlined,
-                          title: 'Emergency Contacts',
-                          subtitle: '24/7 support and emergency assistance',
-                          onTap: () {},
-                        ),
-                        const SizedBox(height: 12),
-                        _EmergencyCard(onCall: () {}),
                       ],
                     ),
                   ),
@@ -259,79 +226,120 @@ class _PatientCarePageState extends State<PatientCarePage> {
   }
 }
 
-class _TopHeader extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color headerColor;
-  final VoidCallback onBack;
-  final VoidCallback onNotifications;
-  final VoidCallback onProfile;
+enum _MenuAction { profile, settings, privacy, logout }
 
-  const _TopHeader({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.headerColor,
+class _PhoneHeader extends StatelessWidget {
+  final VoidCallback onBack;
+  final ValueChanged<_MenuAction> onMenu;
+
+  const _PhoneHeader({
     required this.onBack,
-    required this.onNotifications,
-    required this.onProfile,
+    required this.onMenu,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: headerColor,
-      padding: const EdgeInsets.fromLTRB(8, 8, 10, 12),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: onBack,
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-          ),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(14),
+    return Material(
+      color: const Color(0xFF2F73FF),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(6, 10, 10, 10),
+        child: Row(
+          children: [
+            IconButton(
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
             ),
-            child: Icon(icon, color: Colors.white),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, // left aligned
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.favorite, color: Colors.white, size: 18),
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Patient Care',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      height: 1.1,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'Daily plans, reminders, and support',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xE6FFFFFF),
+                      height: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuButton<_MenuAction>(
+              tooltip: 'Menu',
+              icon: const Icon(Icons.settings, color: Colors.white),
+              onSelected: onMenu,
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: _MenuAction.profile,
+                  child: Row(
+                    children: [
+                      Icon(Icons.person_outline, size: 18),
+                      SizedBox(width: 10),
+                      Text('Profile'),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xE6FFFFFF),
+                PopupMenuItem(
+                  value: _MenuAction.settings,
+                  child: Row(
+                    children: [
+                      Icon(Icons.tune, size: 18),
+                      SizedBox(width: 10),
+                      Text('Settings'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: _MenuAction.privacy,
+                  child: Row(
+                    children: [
+                      Icon(Icons.lock_outline, size: 18),
+                      SizedBox(width: 10),
+                      Text('Privacy'),
+                    ],
+                  ),
+                ),
+                PopupMenuDivider(),
+                PopupMenuItem(
+                  value: _MenuAction.logout,
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, size: 18, color: Colors.red),
+                      SizedBox(width: 10),
+                      Text('Log out'),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-          IconButton(
-            onPressed: onNotifications,
-            icon: const Icon(Icons.notifications_none, color: Colors.white),
-          ),
-          IconButton(
-            onPressed: onProfile,
-            icon: const Icon(Icons.account_circle, color: Colors.white),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -373,18 +381,24 @@ class _HeroBanner extends StatelessWidget {
             children: [
               Text(
                 title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.w900,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 subtitle,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 220),
                   height: 1.35,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 14),
@@ -397,13 +411,9 @@ class _HeroBanner extends StatelessWidget {
                     foregroundColor: const Color(0xFF1B2B55),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
                   ),
                   icon: const Icon(Icons.calendar_month, size: 18),
-                  label: const Text(
-                    'Schedule Appointment',
-                    style: TextStyle(fontWeight: FontWeight.w800),
-                  ),
+                  label: const Text('Schedule Appointment'),
                 ),
               ),
               const SizedBox(height: 12),
@@ -423,21 +433,23 @@ class _HeroBanner extends StatelessWidget {
   }
 }
 
-class _StatsGrid extends StatelessWidget {
+class _StatsRow extends StatelessWidget {
   final List<_StatCardData> items;
-  const _StatsGrid({required this.items});
+
+  const _StatsRow({required this.items});
 
   @override
   Widget build(BuildContext context) {
+    // Make cards taller to avoid overflow on web/phone.
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: items.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, // phone fit
+        crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 2.7,
+        childAspectRatio: 1.85,
       ),
       itemBuilder: (context, i) => _StatCard(items[i]),
     );
@@ -466,33 +478,34 @@ class _StatCardData {
 
 class _StatCard extends StatelessWidget {
   final _StatCardData data;
+
   const _StatCard(this.data);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 230),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE6ECFF)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               color: data.iconBg,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(data.icon, color: data.iconColor),
+            child: Icon(data.icon, color: data.iconColor, size: 20),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Row(
                   children: [
@@ -502,34 +515,42 @@ class _StatCard extends StatelessWidget {
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
                         color: Color(0xFF1B2B55),
+                        height: 1.0,
                       ),
                     ),
                     const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: data.badgeColor,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        data.badge,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1B2B55),
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: data.badgeColor,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          data.badge,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1B2B55),
+                            height: 1.0,
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   data.label,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: const Color(0xFF1B2B55).withValues(alpha: 160),
+                    color: const Color(0xFF1B2B55).withValues(alpha: 170),
                     fontSize: 12,
+                    height: 1.2,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -560,15 +581,18 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Icon(icon, color: const Color(0xFF2F73FF)),
         const SizedBox(width: 10),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFF1B2B55),
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF1B2B55),
+            ),
           ),
         ),
-        const Spacer(),
         if (actionText != null)
           TextButton(
             onPressed: onAction,
@@ -671,6 +695,7 @@ class _CarePlanCard extends StatelessWidget {
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
                               color: statusTextColor,
+                              height: 1.0,
                             ),
                           ),
                         ),
@@ -684,6 +709,8 @@ class _CarePlanCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12.5,
                         color: const Color(0xFF1B2B55).withValues(alpha: 160),
+                        fontWeight: FontWeight.w600,
+                        height: 1.25,
                       ),
                     ),
                   ],
@@ -728,9 +755,18 @@ class _CarePlanCard extends StatelessWidget {
             children: [
               const Icon(Icons.calendar_month, size: 18, color: Color(0xFF60709A)),
               const SizedBox(width: 8),
-              Text('Next: $nextDate', style: const TextStyle(color: Color(0xFF60709A))),
-              const Spacer(),
-              TextButton(onPressed: onDetails, child: const Text('View Details')),
+              Expanded(
+                child: Text(
+                  'Next: $nextDate',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Color(0xFF60709A)),
+                ),
+              ),
+              TextButton(
+                onPressed: onDetails,
+                child: const Text('View Details'),
+              ),
             ],
           ),
         ],
@@ -743,7 +779,10 @@ class _ReminderList extends StatelessWidget {
   final List<_ReminderItem> items;
   final void Function(int index, bool value) onToggle;
 
-  const _ReminderList({required this.items, required this.onToggle});
+  const _ReminderList({
+    required this.items,
+    required this.onToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -752,7 +791,10 @@ class _ReminderList extends StatelessWidget {
         final it = items[i];
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
-          child: _ReminderTile(item: it, onChanged: (v) => onToggle(i, v)),
+          child: _ReminderTile(
+            item: it,
+            onChanged: (v) => onToggle(i, v),
+          ),
         );
       }),
     );
@@ -786,7 +828,10 @@ class _ReminderTile extends StatelessWidget {
   final _ReminderItem item;
   final ValueChanged<bool> onChanged;
 
-  const _ReminderTile({required this.item, required this.onChanged});
+  const _ReminderTile({
+    required this.item,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -803,7 +848,6 @@ class _ReminderTile extends StatelessWidget {
             value: item.done,
             onChanged: (v) => onChanged(v ?? false),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-            activeColor: const Color(0xFF2F73FF),
           ),
           const SizedBox(width: 6),
           Expanded(
@@ -821,12 +865,19 @@ class _ReminderTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Row(
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    const Icon(Icons.access_time, size: 16, color: Color(0xFF60709A)),
-                    const SizedBox(width: 6),
-                    Text(item.time, style: const TextStyle(color: Color(0xFF60709A))),
-                    const SizedBox(width: 10),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.access_time, size: 16, color: Color(0xFF60709A)),
+                        const SizedBox(width: 6),
+                        Text(item.time, style: const TextStyle(color: Color(0xFF60709A))),
+                      ],
+                    ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
@@ -835,6 +886,8 @@ class _ReminderTile extends StatelessWidget {
                       ),
                       child: Text(
                         item.tag,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -845,258 +898,6 @@ class _ReminderTile extends StatelessWidget {
                   ],
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CareTeamCard extends StatelessWidget {
-  final String name;
-  final String role;
-  final ImageProvider image;
-  final bool online;
-
-  const _CareTeamCard({
-    required this.name,
-    required this.role,
-    required this.image,
-    required this.online,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE6ECFF)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Stack(
-                children: [
-                  CircleAvatar(radius: 22, backgroundImage: image),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: online ? const Color(0xFF22C55E) : const Color(0xFF9CA3AF),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF1B2B55),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      role,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: const Color(0xFF1B2B55).withValues(alpha: 150),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(child: _smallActionButton(icon: Icons.call, label: 'Call', onTap: () {})),
-              const SizedBox(width: 8),
-              Expanded(child: _smallActionButton(icon: Icons.message, label: 'Message', onTap: () {})),
-              const SizedBox(width: 8),
-              Expanded(child: _smallActionButton(icon: Icons.videocam, label: 'Video', onTap: () {})),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _smallActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF3F6FF),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFE6ECFF)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: const Color(0xFF1B2B55)),
-            const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ResourceTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _ResourceTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE6ECFF)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEAF2FF),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(icon, color: const Color(0xFF2F73FF)),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF1B2B55),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: const Color(0xFF1B2B55).withValues(alpha: 150),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: Color(0xFF60709A)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmergencyCard extends StatelessWidget {
-  final VoidCallback onCall;
-  const _EmergencyCard({required this.onCall});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF2D55), Color(0xFFB91C1C)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x22000000),
-            blurRadius: 18,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '24/7 Emergency Support',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'For urgent medical assistance, contact our emergency line anytime.',
-            style: TextStyle(color: Colors.white.withValues(alpha: 230), fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onCall,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFFB91C1C),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Call Emergency Line',
-                style: TextStyle(fontWeight: FontWeight.w900),
-              ),
             ),
           ),
         ],

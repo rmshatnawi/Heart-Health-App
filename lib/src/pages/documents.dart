@@ -74,7 +74,7 @@ class DocumentsPage extends StatelessWidget {
                   title: 'Documents',
                   subtitle: 'Your medical files in one place',
                   icon: Icons.folder_open_rounded,
-                  headerColor: blue, // header bg = icon theme (blue)
+                  headerColor: blue,
                   onBack: () => Navigator.of(context).pop(),
                 ),
                 Expanded(
@@ -83,7 +83,6 @@ class DocumentsPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Upload button (full width on phone)
                         SizedBox(
                           width: double.infinity,
                           height: 48,
@@ -104,10 +103,8 @@ class DocumentsPage extends StatelessWidget {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 14),
 
-                        // Search + filter icons (phone friendly)
                         Row(
                           children: [
                             Expanded(
@@ -138,14 +135,12 @@ class DocumentsPage extends StatelessWidget {
                         ),
 
                         const SizedBox(height: 18),
-
                         const Text(
                           'Categories',
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                         ),
                         const SizedBox(height: 12),
 
-                        // Categories grid (phone: 2 columns)
                         GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -169,7 +164,6 @@ class DocumentsPage extends StatelessWidget {
 
                         const SizedBox(height: 22),
 
-                        // Recent docs header
                         Row(
                           children: [
                             const Text(
@@ -185,7 +179,7 @@ class DocumentsPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
 
-                        // Recent docs grid (phone: 2 columns, taller cards)
+                        // FIX: taller grid cells + card layout that can shrink safely
                         GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -194,7 +188,7 @@ class DocumentsPage extends StatelessWidget {
                             crossAxisCount: 2,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
-                            childAspectRatio: 1.25,
+                            childAspectRatio: 1.05, // was 1.25 (too short -> overflow)
                           ),
                           itemBuilder: (context, i) {
                             final d = recentDocs[i];
@@ -277,7 +271,7 @@ class _TopHeader extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, // left aligned
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
@@ -476,22 +470,39 @@ class _RecentDocumentCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Text(
-              doc.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w900, height: 1.2),
+
+            // FIX: middle section is flexible, chip is always visible (no overflow)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    doc.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${doc.date}  •  ${doc.size}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF6B7A99),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              '${doc.date}  •  ${doc.size}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Color(0xFF6B7A99), fontSize: 12),
-            ),
-            const Spacer(),
+
+            const SizedBox(height: 8),
+
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: const Color(0xFFE8F1FF),
                 borderRadius: BorderRadius.circular(999),
