@@ -2,278 +2,532 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-class WellnessPage extends StatelessWidget {
+class WellnessPage extends StatefulWidget {
   const WellnessPage({super.key});
+
+  @override
+  State<WellnessPage> createState() => _WellnessPageState();
+}
+
+class _WellnessPageState extends State<WellnessPage> {
+  // Frame
+  static const double _frameW = 412.0;
+  static const double _frameH = 917.0;
+  static const double _frameRadius = 22.0;
+
+  // User-entered current values
+  int stepsToday = 0;
+  int heartRate = 0; // bpm
+  int caloriesBurned = 0;
+  double sleepHours = 0.0;
+  int activeMinutes = 0;
+  int waterCups = 0;
+
+  // User-entered goals
+  int goalSteps = 10000;
+  int goalCalories = 2500;
+  double goalSleepHours = 8.0;
+  int goalActiveMinutes = 50;
+  int goalWaterCups = 8;
+
+  // Streak (resettable)
+  int streakDays = 0;
+
+  // Static status pill (kept)
+  String statusText = 'Healthy & Active';
+
+  void _resetAll() {
+    setState(() {
+      stepsToday = 0;
+      heartRate = 0;
+      caloriesBurned = 0;
+      sleepHours = 0.0;
+      activeMinutes = 0;
+      waterCups = 0;
+
+      streakDays = 0;
+    });
+  }
+
+  double _safeProgress(num v, num g) {
+    if (g <= 0) return 0.0;
+    return (v / g).clamp(0.0, 1.0).toDouble();
+  }
+
+  int _goalPercent() {
+    final p1 = _safeProgress(stepsToday, goalSteps);
+    final p2 = _safeProgress(activeMinutes, goalActiveMinutes);
+    final p3 = _safeProgress(caloriesBurned, goalCalories);
+    final p4 = _safeProgress(waterCups, goalWaterCups);
+    final avg = (p1 + p2 + p3 + p4) / 4.0;
+    return (avg * 100).round().clamp(0, 100);
+  }
+
+  Future<void> _openEditDialog() async {
+    final stepsTodayCtrl = TextEditingController(text: stepsToday.toString());
+    final heartRateCtrl = TextEditingController(text: heartRate.toString());
+    final caloriesCtrl = TextEditingController(text: caloriesBurned.toString());
+    final sleepCtrl = TextEditingController(text: sleepHours.toStringAsFixed(1));
+    final activeCtrl = TextEditingController(text: activeMinutes.toString());
+    final waterCtrl = TextEditingController(text: waterCups.toString());
+
+    final goalStepsCtrl = TextEditingController(text: goalSteps.toString());
+    final goalCaloriesCtrl = TextEditingController(text: goalCalories.toString());
+    final goalSleepCtrl =
+    TextEditingController(text: goalSleepHours.toStringAsFixed(1));
+    final goalActiveCtrl =
+    TextEditingController(text: goalActiveMinutes.toString());
+    final goalWaterCtrl = TextEditingController(text: goalWaterCups.toString());
+
+    int toInt(TextEditingController c) => int.tryParse(c.text.trim()) ?? 0;
+    double toDouble(TextEditingController c) => double.tryParse(c.text.trim()) ?? 0.0;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Edit Your Data'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _DialogSectionTitle('Today'),
+                _DialogField(label: 'Steps Today', controller: stepsTodayCtrl),
+                _DialogField(label: 'Heart Rate (BPM)', controller: heartRateCtrl),
+                _DialogField(label: 'Calories Burned', controller: caloriesCtrl),
+                _DialogField(label: 'Sleep Hours', controller: sleepCtrl),
+                _DialogField(label: 'Active Minutes', controller: activeCtrl),
+                _DialogField(label: 'Water Cups', controller: waterCtrl),
+                const SizedBox(height: 12),
+                const _DialogSectionTitle('Goals'),
+                _DialogField(label: 'Goal Steps', controller: goalStepsCtrl),
+                _DialogField(label: 'Goal Calories', controller: goalCaloriesCtrl),
+                _DialogField(label: 'Goal Sleep Hours', controller: goalSleepCtrl),
+                _DialogField(label: 'Goal Active Minutes', controller: goalActiveCtrl),
+                _DialogField(label: 'Goal Water Cups', controller: goalWaterCtrl),
+                const SizedBox(height: 8),
+                const Text(
+                  'Streak is reset by Reset button.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF7A8AA6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  stepsToday = toInt(stepsTodayCtrl);
+                  heartRate = toInt(heartRateCtrl);
+                  caloriesBurned = toInt(caloriesCtrl);
+                  sleepHours = toDouble(sleepCtrl);
+                  activeMinutes = toInt(activeCtrl);
+                  waterCups = toInt(waterCtrl);
+
+                  goalSteps = max(0, toInt(goalStepsCtrl));
+                  goalCalories = max(0, toInt(goalCaloriesCtrl));
+                  goalSleepHours = max(0.0, toDouble(goalSleepCtrl));
+                  goalActiveMinutes = max(0, toInt(goalActiveCtrl));
+                  goalWaterCups = max(0, toInt(goalWaterCtrl));
+                });
+                Navigator.of(ctx).pop();
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    stepsTodayCtrl.dispose();
+    heartRateCtrl.dispose();
+    caloriesCtrl.dispose();
+    sleepCtrl.dispose();
+    activeCtrl.dispose();
+    waterCtrl.dispose();
+
+    goalStepsCtrl.dispose();
+    goalCaloriesCtrl.dispose();
+    goalSleepCtrl.dispose();
+    goalActiveCtrl.dispose();
+    goalWaterCtrl.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     const bg = Color(0xFFF6F2FF);
     const blue = Color(0xFF2F73FF);
 
+    final stepsProg = _safeProgress(stepsToday, goalSteps);
+    final sleepProg = _safeProgress(sleepHours, goalSleepHours);
+    final calProg = _safeProgress(caloriesBurned, goalCalories);
+
     return Scaffold(
       backgroundColor: bg,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430), // phone-fit
-            child: Column(
-              children: [
-                _TopHeader(
-                  title: 'Outlook on Wellness',
-                  subtitle: 'Wellness dashboard',
-                  icon: Icons.auto_awesome_rounded,
-                  headerColor: blue, // header background = icon theme (blue)
-                  onBack: () => Navigator.of(context).pop(),
-                  trailing: const _Pill(
-                    text: 'Healthy & Active',
-                    icon: Icons.circle,
-                    iconColor: Color(0xFF23B26D),
-                  ),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _HeroCard(
-                          dateText: 'Friday, December 19, 2025',
-                          title: 'Great Day for Wellness!',
-                          subtitle:
-                          "You're on track with your health goals. Keep up the amazing work!",
-                          goalLabel: 'Daily Goal',
-                          goalValue: '84%',
-                          streakLabel: 'Streak',
-                          streakValue: '7 Days',
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Summary mini cards row (phone: 2 columns)
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final itemWidth = (constraints.maxWidth - 12) / 2;
-                            return Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
-                              children: [
-                                _MetricCard(
-                                  width: itemWidth,
-                                  icon: Icons.directions_walk_rounded,
-                                  iconBg: const Color(0xFFEFE9FF),
-                                  iconColor: const Color(0xFF7B61FF),
-                                  title: 'Steps Today',
-                                  value: '8,547',
-                                  sub: 'Goal: 10,000 steps',
-                                  badge: '+12%',
-                                  badgeColor: const Color(0xFF23B26D),
-                                ),
-                                _MetricCard(
-                                  width: itemWidth,
-                                  icon: Icons.favorite_rounded,
-                                  iconBg: const Color(0xFFFFE8F0),
-                                  iconColor: const Color(0xFFFF4D7D),
-                                  title: 'Heart Rate',
-                                  value: '72',
-                                  sub: 'BPM • Normal',
-                                  badge: 'Stable',
-                                  badgeColor: const Color(0xFF7A8AA6),
-                                ),
-                                _MetricCard(
-                                  width: itemWidth,
-                                  icon: Icons.local_fire_department_rounded,
-                                  iconBg: const Color(0xFFFFEFE3),
-                                  iconColor: const Color(0xFFFF8A2A),
-                                  title: 'Calories',
-                                  value: '1,847',
-                                  sub: 'Burned today',
-                                  badge: '+8%',
-                                  badgeColor: const Color(0xFF23B26D),
-                                ),
-                                _MetricCard(
-                                  width: itemWidth,
-                                  icon: Icons.bedtime_rounded,
-                                  iconBg: const Color(0xFFEAF2FF),
-                                  iconColor: const Color(0xFF2F73FF),
-                                  title: 'Sleep',
-                                  value: '7.5h',
-                                  sub: 'Last night',
-                                  badge: '+15 min',
-                                  badgeColor: const Color(0xFF23B26D),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-
-                        const SizedBox(height: 14),
-
-                        // Charts (static UI) - phone: stacked
-                        const _ChartCard(
-                          title: 'Weekly Activity',
-                          subtitle: 'Your steps and calories burned this week',
-                          type: _ChartType.area,
-                        ),
-                        const SizedBox(height: 14),
-                        const _ChartCard(
-                          title: 'Heart Rate Trend',
-                          subtitle: "Today's heart rate monitoring",
-                          type: _ChartType.line,
-                        ),
-
-                        const SizedBox(height: 14),
-
-                        // Goals ring row (phone: 2 columns)
-                        const _SectionHeader(title: "Today's Goals"),
-                        const SizedBox(height: 10),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final itemWidth = (constraints.maxWidth - 12) / 2;
-                            return Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
-                              children: [
-                                _GoalRing(
-                                  width: itemWidth,
-                                  label: 'Steps',
-                                  valueTop: '8.5K',
-                                  valueBottom: 'of 10K',
-                                  progress: 0.85,
-                                ),
-                                _GoalRing(
-                                  width: itemWidth,
-                                  label: 'Active Minutes',
-                                  valueTop: '46',
-                                  valueBottom: 'of 50',
-                                  progress: 0.92,
-                                ),
-                                _GoalRing(
-                                  width: itemWidth,
-                                  label: 'Calories',
-                                  valueTop: '1847',
-                                  valueBottom: 'of 2500',
-                                  progress: 0.74,
-                                ),
-                                _GoalRing(
-                                  width: itemWidth,
-                                  label: 'Water Intake',
-                                  valueTop: '8',
-                                  valueBottom: 'of 8',
-                                  progress: 1.0,
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Tips grid (phone: 2 columns)
-                        const _SectionHeader(
-                          title: 'Wellness Tips',
-                          subtitle:
-                          'Personalized recommendations for your health journey',
-                        ),
-                        const SizedBox(height: 10),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final tileWidth = (constraints.maxWidth - 12) / 2;
-                            return Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
-                              children: [
-                                _TipCard(
-                                  width: tileWidth,
-                                  icon: Icons.water_drop_rounded,
-                                  title: 'Stay Hydrated',
-                                  body:
-                                  "Great job! You've reached your water intake goal for today. Hydration is key to maintaining energy and focus throughout the day.",
-                                  tint: const Color(0xFFEAF2FF),
-                                  border: const Color(0xFFBFD6FF),
-                                  iconColor: const Color(0xFF2F73FF),
-                                ),
-                                _TipCard(
-                                  width: tileWidth,
-                                  icon: Icons.spa_rounded,
-                                  title: 'Mindful Breathing',
-                                  body:
-                                  "Take 5 minutes for deep breathing exercises. It helps reduce stress and improves mental clarity and overall well-being.",
-                                  tint: const Color(0xFFF0E6FF),
-                                  border: const Color(0xFFD8C7FF),
-                                  iconColor: const Color(0xFF8C4DFF),
-                                ),
-                                _TipCard(
-                                  width: tileWidth,
-                                  icon: Icons.restaurant_rounded,
-                                  title: 'Balanced Nutrition',
-                                  body:
-                                  "Include colorful fruits and vegetables in your meals. A rainbow plate ensures you're getting diverse nutrients and vitamins.",
-                                  tint: const Color(0xFFE8FFF3),
-                                  border: const Color(0xFFBFEFD6),
-                                  iconColor: const Color(0xFF23B26D),
-                                ),
-                                _TipCard(
-                                  width: tileWidth,
-                                  icon: Icons.directions_run_rounded,
-                                  title: 'Move More',
-                                  body:
-                                  "You're close to your step goal! A short evening walk can help you reach it while enjoying fresh air and nature.",
-                                  tint: const Color(0xFFFFF2E6),
-                                  border: const Color(0xFFFFD4AE),
-                                  iconColor: const Color(0xFFFF8A2A),
-                                ),
-                                _TipCard(
-                                  width: tileWidth,
-                                  icon: Icons.bedtime_rounded,
-                                  title: 'Quality Sleep',
-                                  body:
-                                  "Aim for 7–9 hours of sleep tonight. Good sleep is essential for recovery, mental health, and overall wellness.",
-                                  tint: const Color(0xFFEAF2FF),
-                                  border: const Color(0xFFBFD6FF),
-                                  iconColor: const Color(0xFF2F73FF),
-                                ),
-                                _TipCard(
-                                  width: tileWidth,
-                                  icon: Icons.wb_sunny_rounded,
-                                  title: 'Morning Sunlight',
-                                  body:
-                                  "Get 10–15 minutes of morning sunlight. It helps regulate your circadian rhythm and boosts vitamin D levels naturally.",
-                                  tint: const Color(0xFFFFF2E6),
-                                  border: const Color(0xFFFFD4AE),
-                                  iconColor: const Color(0xFFFF8A2A),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-
-                        const SizedBox(height: 14),
-
-                        // Big gradient cards (phone: stacked)
-                        _BigGradientCard(
-                          width: double.infinity,
-                          icon: Icons.monitor_heart_rounded,
-                          title: '7-Day Streak!',
-                          body:
-                          "You've been consistently active for a whole week. This is amazing progress toward building lasting healthy habits!",
-                          colors: const [Color(0xFF2DD36F), Color(0xFF12C2E9)],
-                        ),
-                        const SizedBox(height: 14),
-                        _BigGradientCard(
-                          width: double.infinity,
-                          icon: Icons.apple_rounded,
-                          title: 'Nutrition Goal',
-                          body:
-                          "You're maintaining a balanced diet with plenty of fruits and vegetables. Your body thanks you for the nutrients!",
-                          colors: const [Color(0xFFFF8A2A), Color(0xFFFF4D7D)],
-                        ),
-
-                        const SizedBox(height: 18),
-                      ],
+      body: Center(
+        child: Container(
+          width: _frameW,
+          height: _frameH,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(_frameRadius),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x14000000),
+                blurRadius: 18,
+                offset: Offset(0, 12),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(_frameRadius),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // FIX: keep header clean. Only status pill stays in header.
+                  _TopHeader(
+                    title: 'Outlook on Wellness',
+                    subtitle: 'Wellness dashboard',
+                    icon: Icons.auto_awesome_rounded,
+                    headerColor: blue,
+                    onBack: () => Navigator.of(context).pop(),
+                    trailing: _Pill(
+                      text: statusText,
+                      icon: Icons.circle,
+                      iconColor: const Color(0xFF23B26D),
                     ),
                   ),
-                ),
-              ],
+
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // NEW: actions row below header, so title never wraps
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _ActionTile(
+                                  icon: Icons.edit_rounded,
+                                  title: 'Edit Data',
+                                  subtitle: 'Enter today + goals',
+                                  onTap: _openEditDialog,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _ActionTile(
+                                  icon: Icons.refresh_rounded,
+                                  title: 'Reset',
+                                  subtitle: 'Clear today + streak',
+                                  onTap: _resetAll,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 14),
+
+                          _HeroCard(
+                            dateText: _simpleDateString(),
+                            title: 'Wellness Snapshot',
+                            subtitle:
+                            'This page updates from your entries.',
+                            goalLabel: 'Daily Goal',
+                            goalValue: '${_goalPercent()}%',
+                            streakLabel: 'Streak',
+                            streakValue: '$streakDays Days',
+                          ),
+                          const SizedBox(height: 14),
+
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final itemWidth = (constraints.maxWidth - 12) / 2;
+
+                              return Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: [
+                                  _MetricCard(
+                                    width: itemWidth,
+                                    icon: Icons.directions_walk_rounded,
+                                    iconBg: const Color(0xFFEFE9FF),
+                                    iconColor: const Color(0xFF7B61FF),
+                                    title: 'Steps Today',
+                                    value: _fmtInt(stepsToday),
+                                    sub: 'Goal: ${_fmtInt(goalSteps)} steps',
+                                    badge: '${(stepsProg * 100).round()}%',
+                                    badgeBg: const Color(0xFF23B26D),
+                                  ),
+                                  _MetricCard(
+                                    width: itemWidth,
+                                    icon: Icons.favorite_rounded,
+                                    iconBg: const Color(0xFFFFE8F0),
+                                    iconColor: const Color(0xFFFF4D7D),
+                                    title: 'Heart Rate',
+                                    value: _fmtInt(heartRate),
+                                    sub: 'BPM',
+                                    badge: heartRate == 0 ? '—' : 'Logged',
+                                    badgeBg: const Color(0xFF7A8AA6),
+                                  ),
+                                  _MetricCard(
+                                    width: itemWidth,
+                                    icon: Icons.local_fire_department_rounded,
+                                    iconBg: const Color(0xFFFFEFE3),
+                                    iconColor: const Color(0xFFFF8A2A),
+                                    title: 'Calories',
+                                    value: _fmtInt(caloriesBurned),
+                                    sub: 'Goal: ${_fmtInt(goalCalories)}',
+                                    badge: '${(calProg * 100).round()}%',
+                                    badgeBg: const Color(0xFF23B26D),
+                                  ),
+                                  _MetricCard(
+                                    width: itemWidth,
+                                    icon: Icons.bedtime_rounded,
+                                    iconBg: const Color(0xFFEAF2FF),
+                                    iconColor: const Color(0xFF2F73FF),
+                                    title: 'Sleep',
+                                    value: _fmtHours(sleepHours),
+                                    sub: 'Goal: ${_fmtHours(goalSleepHours)}',
+                                    badge: '${(sleepProg * 100).round()}%',
+                                    badgeBg: const Color(0xFF23B26D),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+
+                          const SizedBox(height: 14),
+
+                          // REMOVED: analysis/figures charts section
+
+                          const _SectionHeader(title: "Today's Goals"),
+                          const SizedBox(height: 10),
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final itemWidth = (constraints.maxWidth - 12) / 2;
+                              return Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: [
+                                  _GoalRing(
+                                    width: itemWidth,
+                                    label: 'Steps',
+                                    valueTop: _fmtShortK(stepsToday),
+                                    valueBottom: 'of ${_fmtShortK(goalSteps)}',
+                                    progress: _safeProgress(stepsToday, goalSteps),
+                                  ),
+                                  _GoalRing(
+                                    width: itemWidth,
+                                    label: 'Active Minutes',
+                                    valueTop: _fmtInt(activeMinutes),
+                                    valueBottom: 'of ${_fmtInt(goalActiveMinutes)}',
+                                    progress: _safeProgress(activeMinutes, goalActiveMinutes),
+                                  ),
+                                  _GoalRing(
+                                    width: itemWidth,
+                                    label: 'Calories',
+                                    valueTop: _fmtInt(caloriesBurned),
+                                    valueBottom: 'of ${_fmtInt(goalCalories)}',
+                                    progress: _safeProgress(caloriesBurned, goalCalories),
+                                  ),
+                                  _GoalRing(
+                                    width: itemWidth,
+                                    label: 'Water Intake',
+                                    valueTop: _fmtInt(waterCups),
+                                    valueBottom: 'of ${_fmtInt(goalWaterCups)}',
+                                    progress: _safeProgress(waterCups, goalWaterCups),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          const _SectionHeader(
+                            title: 'Wellness Tips',
+                            subtitle: 'Static tips',
+                          ),
+                          const SizedBox(height: 10),
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final tileWidth = (constraints.maxWidth - 12) / 2;
+                              return Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: const [
+                                  _TipCard(
+                                    width: 0,
+                                    icon: Icons.water_drop_rounded,
+                                    title: 'Stay Hydrated',
+                                    body: 'Great job focusing on hydration. Water supports energy and concentration.',
+                                    tint: Color(0xFFEAF2FF),
+                                    border: Color(0xFFBFD6FF),
+                                    iconColor: Color(0xFF2F73FF),
+                                  ),
+                                  _TipCard(
+                                    width: 0,
+                                    icon: Icons.spa_rounded,
+                                    title: 'Mindful Breathing',
+                                    body: 'Take 5 minutes for deep breathing. It reduces stress and improves clarity.',
+                                    tint: Color(0xFFF0E6FF),
+                                    border: Color(0xFFD8C7FF),
+                                    iconColor: Color(0xFF8C4DFF),
+                                  ),
+                                  _TipCard(
+                                    width: 0,
+                                    icon: Icons.restaurant_rounded,
+                                    title: 'Balanced Nutrition',
+                                    body: 'Aim for a colorful plate. Variety increases nutrient coverage.',
+                                    tint: Color(0xFFE8FFF3),
+                                    border: Color(0xFFBFEFD6),
+                                    iconColor: Color(0xFF23B26D),
+                                  ),
+                                  _TipCard(
+                                    width: 0,
+                                    icon: Icons.directions_run_rounded,
+                                    title: 'Move More',
+                                    body: 'Short walks add up. Movement boosts mood and circulation.',
+                                    tint: Color(0xFFFFF2E6),
+                                    border: Color(0xFFFFD4AE),
+                                    iconColor: Color(0xFFFF8A2A),
+                                  ),
+                                  _TipCard(
+                                    width: 0,
+                                    icon: Icons.bedtime_rounded,
+                                    title: 'Quality Sleep',
+                                    body: 'Consistent sleep hours improve recovery and focus.',
+                                    tint: Color(0xFFEAF2FF),
+                                    border: Color(0xFFBFD6FF),
+                                    iconColor: Color(0xFF2F73FF),
+                                  ),
+                                  _TipCard(
+                                    width: 0,
+                                    icon: Icons.wb_sunny_rounded,
+                                    title: 'Morning Sunlight',
+                                    body: '10–15 minutes of morning light helps regulate your body clock.',
+                                    tint: Color(0xFFFFF2E6),
+                                    border: Color(0xFFFFD4AE),
+                                    iconColor: Color(0xFFFF8A2A),
+                                  ),
+                                ],
+
+                              );
+                            },
+                          ),
+
+                          const SizedBox(height: 14),
+
+                          _BigGradientCard(
+                            width: double.infinity,
+                            icon: Icons.monitor_heart_rounded,
+                            title: 'Consistency Wins',
+                            body: 'Small actions daily beat occasional big efforts.',
+                            colors: const [Color(0xFF2DD36F), Color(0xFF12C2E9)],
+                          ),
+                          const SizedBox(height: 14),
+                          _BigGradientCard(
+                            width: double.infinity,
+                            icon: Icons.apple_rounded,
+                            title: 'Nutrition Goal',
+                            body: 'Protein + fiber + hydration is a strong default.',
+                            colors: const [Color(0xFFFF8A2A), Color(0xFFFF4D7D)],
+                          ),
+
+                          const SizedBox(height: 18),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _simpleDateString() {
+    final d = DateTime.now();
+    final months = const [
+      'January','February','March','April','May','June',
+      'July','August','September','October','November','December'
+    ];
+    final weekdays = const [
+      'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'
+    ];
+    final wd = weekdays[d.weekday - 1];
+    final m = months[d.month - 1];
+    return '$wd, $m ${d.day}, ${d.year}';
+  }
+
+  String _fmtInt(int v) => v.toString();
+  String _fmtHours(double h) => '${h.toStringAsFixed(h % 1 == 0 ? 0 : 1)}h';
+
+  String _fmtShortK(int v) {
+    if (v >= 1000) {
+      final k = v / 1000.0;
+      final s = (k % 1 == 0) ? k.toStringAsFixed(0) : k.toStringAsFixed(1);
+      return '${s}K';
+    }
+    return v.toString();
+  }
+}
+
+class _DialogSectionTitle extends StatelessWidget {
+  final String text;
+  const _DialogSectionTitle(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, top: 6),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w900,
+          color: Color(0xFF1B2B55),
+        ),
+      ),
+    );
+  }
+}
+
+class _DialogField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  const _DialogField({required this.label, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: TextField(
+        controller: controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: const Color(0xFFF7FAFF),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFE1ECFF)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF2F73FF), width: 1.3),
           ),
         ),
       ),
@@ -322,7 +576,7 @@ class _TopHeader extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, // left aligned
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
@@ -385,6 +639,82 @@ class _Pill extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _ActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 235),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE6EEFF)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 14,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF2FF),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: const Color(0xFF2F73FF)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF1B2B55),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF7A8AA6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFF9FB0C9)),
+          ],
+        ),
       ),
     );
   }
@@ -557,8 +887,10 @@ class _MetricCard extends StatelessWidget {
   final String title;
   final String value;
   final String sub;
+
+  // unreadable badge fixed: solid background + WHITE text
   final String badge;
-  final Color badgeColor;
+  final Color badgeBg;
 
   const _MetricCard({
     required this.width,
@@ -569,7 +901,7 @@ class _MetricCard extends StatelessWidget {
     required this.value,
     required this.sub,
     required this.badge,
-    required this.badgeColor,
+    required this.badgeBg,
   });
 
   @override
@@ -606,18 +938,24 @@ class _MetricCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: badgeColor.withValues(alpha: 28),
+                    color: badgeBg,
                     borderRadius: BorderRadius.circular(999),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x12000000),
+                        blurRadius: 8,
+                        offset: Offset(0, 6),
+                      )
+                    ],
                   ),
                   child: Text(
                     badge,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
-                      color: badgeColor,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -690,245 +1028,6 @@ class _SectionHeader extends StatelessWidget {
       ],
     );
   }
-}
-
-enum _ChartType { area, line }
-
-class _ChartCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final _ChartType type;
-
-  const _ChartCard({
-    required this.title,
-    required this.subtitle,
-    required this.type,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 235),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE6EEFF)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 14,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF1B2B55),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF7A8AA6),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 180,
-            child: CustomPaint(
-              painter: _FakeChartPainter(type: type),
-              child: const SizedBox.expand(),
-            ),
-          ),
-          if (type == _ChartType.line) ...[
-            const SizedBox(height: 10),
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _SmallStat(label: 'Resting', value: '62 BPM'),
-                _SmallStat(label: 'Average', value: '72 BPM'),
-                _SmallStat(label: 'Peak', value: '82 BPM'),
-              ],
-            ),
-          ] else ...[
-            const SizedBox(height: 10),
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _LegendDot(color: Color(0xFF7B61FF), label: 'Steps'),
-                SizedBox(width: 18),
-                _LegendDot(color: Color(0xFFFF4D7D), label: 'Calories'),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _SmallStat extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _SmallStat({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF7A8AA6),
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFF1B2B55),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  final String label;
-
-  const _LegendDot({required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11.5,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF7A8AA6),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _FakeChartPainter extends CustomPainter {
-  final _ChartType type;
-
-  _FakeChartPainter({required this.type});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final gridPaint = Paint()
-      ..color = const Color(0xFFEAF0FF)
-      ..strokeWidth = 1;
-
-    for (int i = 0; i <= 4; i++) {
-      final y = size.height * (i / 4);
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
-    }
-    for (int i = 0; i <= 6; i++) {
-      final x = size.width * (i / 6);
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
-    }
-
-    if (type == _ChartType.area) {
-      final purple = Paint()
-        ..color = const Color(0xFF7B61FF).withValues(alpha: 75)
-        ..style = PaintingStyle.fill;
-
-      final purpleLine = Paint()
-        ..color = const Color(0xFF7B61FF)
-        ..strokeWidth = 2.5
-        ..style = PaintingStyle.stroke;
-
-      final p = Path();
-      p.moveTo(0, size.height * 0.70);
-      p.cubicTo(size.width * 0.20, size.height * 0.45, size.width * 0.35,
-          size.height * 0.55, size.width * 0.50, size.height * 0.45);
-      p.cubicTo(size.width * 0.65, size.height * 0.35, size.width * 0.78,
-          size.height * 0.55, size.width, size.height * 0.40);
-      final fill = Path.from(p)
-        ..lineTo(size.width, size.height)
-        ..lineTo(0, size.height)
-        ..close();
-      canvas.drawPath(fill, purple);
-      canvas.drawPath(p, purpleLine);
-
-      final pinkLine = Paint()
-        ..color = const Color(0xFFFF4D7D)
-        ..strokeWidth = 2.0
-        ..style = PaintingStyle.stroke;
-
-      final p2 = Path();
-      p2.moveTo(0, size.height * 0.92);
-      p2.cubicTo(size.width * 0.25, size.height * 0.88, size.width * 0.45,
-          size.height * 0.93, size.width * 0.60, size.height * 0.90);
-      p2.cubicTo(size.width * 0.80, size.height * 0.86, size.width * 0.90,
-          size.height * 0.94, size.width, size.height * 0.92);
-      canvas.drawPath(p2, pinkLine);
-    } else {
-      final line = Paint()
-        ..color = const Color(0xFFFF4D7D)
-        ..strokeWidth = 2.6
-        ..style = PaintingStyle.stroke;
-
-      final path = Path();
-      path.moveTo(0, size.height * 0.65);
-      path.lineTo(size.width * 0.15, size.height * 0.55);
-      path.lineTo(size.width * 0.30, size.height * 0.42);
-      path.lineTo(size.width * 0.45, size.height * 0.48);
-      path.lineTo(size.width * 0.60, size.height * 0.35);
-      path.lineTo(size.width * 0.75, size.height * 0.25);
-      path.lineTo(size.width * 0.88, size.height * 0.40);
-      path.lineTo(size.width, size.height * 0.55);
-      canvas.drawPath(path, line);
-
-      final dotPaint = Paint()..color = const Color(0xFFFF4D7D);
-      for (final p in [
-        Offset(0, size.height * 0.65),
-        Offset(size.width * 0.15, size.height * 0.55),
-        Offset(size.width * 0.30, size.height * 0.42),
-        Offset(size.width * 0.45, size.height * 0.48),
-        Offset(size.width * 0.60, size.height * 0.35),
-        Offset(size.width * 0.75, size.height * 0.25),
-        Offset(size.width * 0.88, size.height * 0.40),
-        Offset(size.width, size.height * 0.55),
-      ]) {
-        canvas.drawCircle(p, 3.2, dotPaint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _FakeChartPainter oldDelegate) =>
-      oldDelegate.type != type;
 }
 
 class _GoalRing extends StatelessWidget {
@@ -1038,8 +1137,9 @@ class _TipCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final w = width == 0 ? (MediaQuery.of(context).size.width - 44) / 2 : width;
     return SizedBox(
-      width: width,
+      width: w,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(

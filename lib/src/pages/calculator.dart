@@ -19,6 +19,10 @@ class CalculatorPage extends StatefulWidget {
 
 class _CalculatorPageState extends State<CalculatorPage>
     with SingleTickerProviderStateMixin {
+  // FIXED FRAME SIZE (412x917)
+  static const double _frameW = 412.0;
+  static const double _frameH = 917.0;
+
   late final TabController _tabController;
 
   // BMI
@@ -198,12 +202,6 @@ class _CalculatorPageState extends State<CalculatorPage>
       return;
     }
 
-    // ACC/AHA categories:
-    // Normal: <120 and <80
-    // Elevated: 120–129 and <80
-    // Stage 1: 130–139 or 80–89
-    // Stage 2: >=140 or >=90
-    // Crisis: >=180 and/or >=120 (educational flag)
     BpCategory cat;
     String label;
 
@@ -233,13 +231,11 @@ class _CalculatorPageState extends State<CalculatorPage>
   }
 
   // ============================ HEART RISK (SCREENING SCORE) ============================
-  // This is NOT ASCVD PCE; it’s a lightweight screening score for UI context.
 
   int _riskScore() {
     final age = int.tryParse(_ageController.text.trim());
     int score = 0;
 
-    // Age points
     if (age != null) {
       if (age < 30) score += 0;
       else if (age < 40) score += 1;
@@ -249,10 +245,8 @@ class _CalculatorPageState extends State<CalculatorPage>
       else score += 5;
     }
 
-    // Smoking
     if (_smoker) score += 2;
 
-    // BP category points
     switch (_bpCategory) {
       case BpCategory.normal:
         score += 0;
@@ -273,28 +267,33 @@ class _CalculatorPageState extends State<CalculatorPage>
         break;
     }
 
-    // Sugar / diabetes signal points
     final diabetesFromA1c =
-        (_a1cValue != null && (_a1cValue! >= 6.5)) && _sugarMode == SugarInputMode.a1c;
+        (_a1cValue != null && (_a1cValue! >= 6.5)) &&
+            _sugarMode == SugarInputMode.a1c;
     final diabetesFromGlucose =
-        (_glucoseLabel != null && _glucoseLabel!.toLowerCase().contains('diabetes')) &&
+        (_glucoseLabel != null &&
+            _glucoseLabel!.toLowerCase().contains('diabetes')) &&
             _sugarMode == SugarInputMode.glucose;
 
-    if (diabetesFromA1c || diabetesFromGlucose) score += 3;
-    else {
+    if (diabetesFromA1c || diabetesFromGlucose) {
+      score += 3;
+    } else {
       final prediabetesFromA1c =
           (_a1cValue != null && _a1cValue! >= 5.7 && _a1cValue! < 6.5) &&
               _sugarMode == SugarInputMode.a1c;
       final prediabetesFromGlucose =
-          (_glucoseLabel != null && _glucoseLabel!.toLowerCase().contains('prediabetes')) &&
+          (_glucoseLabel != null &&
+              _glucoseLabel!.toLowerCase().contains('prediabetes')) &&
               _sugarMode == SugarInputMode.glucose;
       if (prediabetesFromA1c || prediabetesFromGlucose) score += 1;
     }
 
-    // BMI points
     if (_bmi != null) {
-      if (_bmi! >= 30) {score += 2;}
-      else if (_bmi! >= 25) {score += 1;}
+      if (_bmi! >= 30) {
+        score += 2;
+      } else if (_bmi! >= 25) {
+        score += 1;
+      }
     }
 
     return score;
@@ -333,7 +332,9 @@ class _CalculatorPageState extends State<CalculatorPage>
       }
       return (const Color(0xFF6B7C97), _glucoseLabel!);
     } else {
-      if (_a1cValue == null || _a1cLabel == null) return (const Color(0xFF6B7C97), '');
+      if (_a1cValue == null || _a1cLabel == null) {
+        return (const Color(0xFF6B7C97), '');
+      }
       final lower = _a1cLabel!.toLowerCase();
       if (lower.contains('normal')) return (Colors.green, _a1cLabel!);
       if (lower.contains('prediabetes')) return (Colors.orange, _a1cLabel!);
@@ -362,85 +363,116 @@ class _CalculatorPageState extends State<CalculatorPage>
     const blue = Color(0xFF2F73FF);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FF),
+      // outside background (web/desktop)
+      backgroundColor: const Color(0xFFEEF2FA),
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430), // phone-fit
-            child: Column(
-              children: [
-                _TopHeader(
-                  title: 'Health Calculator',
-                  subtitle: 'BMI • Sugar • BP • Risk',
-                  icon: Icons.calculate_outlined,
-                  onBack: () => Navigator.pop(context),
-                  color: blue,
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: _Card(
+          // FIXED FRAME SIZE
+          child: SizedBox(
+            width: _frameW,
+            height: _frameH,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Scaffold(
+                backgroundColor: const Color(0xFFF3F6FF),
+                body: SafeArea(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 430),
                       child: Column(
                         children: [
-                          _Tabs(controller: _tabController),
-                          const SizedBox(height: 14),
+                          _TopHeader(
+                            title: 'Health Calculator',
+                            subtitle: 'BMI • Sugar • BP • Risk',
+                            icon: Icons.calculate_outlined,
+                            onBack: () => Navigator.pop(context),
+                            color: blue,
+                          ),
                           Expanded(
-                            child: TabBarView(
-                              controller: _tabController,
-                              children: [
-                                _BmiTab(
-                                  sex: _sex,
-                                  onSexChanged: (s) => setState(() => _sex = s),
-                                  weight: _weightController,
-                                  height: _heightController,
-                                  bmi: _bmi,
-                                  label: _bmiLabel,
-                                  onCalc: _calcBmi,
-                                  colorForBmi: _bmiColor,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: _Card(
+                                child: Column(
+                                  children: [
+                                    _Tabs(controller: _tabController),
+                                    const SizedBox(height: 14),
+                                    Expanded(
+                                      child: TabBarView(
+                                        controller: _tabController,
+                                        children: [
+                                          _BmiTab(
+                                            sex: _sex,
+                                            onSexChanged: (s) =>
+                                                setState(() => _sex = s),
+                                            weight: _weightController,
+                                            height: _heightController,
+                                            bmi: _bmi,
+                                            label: _bmiLabel,
+                                            onCalc: _calcBmi,
+                                            colorForBmi: _bmiColor,
+                                          ),
+                                          _SugarTab(
+                                            mode: _sugarMode,
+                                            onModeChanged: (m) =>
+                                                setState(() => _sugarMode = m),
+                                            glucoseController: _glucoseController,
+                                            glucoseType: _glucoseType,
+                                            onGlucoseTypeChanged: (t) =>
+                                                setState(() => _glucoseType = t),
+                                            onCalcGlucose: _calcGlucose,
+                                            glucoseValue: _glucoseValue,
+                                            a1cController: _a1cController,
+                                            onCalcA1c: _calcA1c,
+                                            a1cValue: _a1cValue,
+                                            chip: _sugarChip(),
+                                          ),
+                                          _BpTab(
+                                            sbpController: _sbpController,
+                                            dbpController: _dbpController,
+                                            onCalc: _calcBp,
+                                            sbp: _sbp,
+                                            dbp: _dbp,
+                                            label: _bpLabel,
+                                            category: _bpCategory,
+                                            colorForCategory: _bpColor,
+                                          ),
+                                          _RiskTab(
+                                            ageController: _ageController,
+                                            sex: _sex,
+                                            onSexChanged: (s) =>
+                                                setState(() => _sex = s),
+                                            smoker: _smoker,
+                                            onSmokerChanged: (v) =>
+                                                setState(() => _smoker = v),
+                                            bmi: _bmi,
+                                            bmiLabel: _bmiLabel,
+                                            bpLabel: _bpLabel,
+                                            bpCategory: _bpCategory,
+                                            sugarMode: _sugarMode,
+                                            glucoseValue: _glucoseValue,
+                                            glucoseLabel: _glucoseLabel,
+                                            a1cValue: _a1cValue,
+                                            a1cLabel: _a1cLabel,
+                                            score: _riskScore(),
+                                            bandForScore: _riskBand,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                _SugarTab(
-                                  mode: _sugarMode,
-                                  onModeChanged: (m) => setState(() => _sugarMode = m),
-                                  glucoseController: _glucoseController,
-                                  glucoseType: _glucoseType,
-                                  onGlucoseTypeChanged: (t) =>
-                                      setState(() => _glucoseType = t),
-                                  onCalcGlucose: _calcGlucose,
-                                  glucoseValue: _glucoseValue,
-                                  a1cController: _a1cController,
-                                  onCalcA1c: _calcA1c,
-                                  a1cValue: _a1cValue,
-                                  chip: _sugarChip(),
-                                ),
-                                _BpTab(
-                                  sbpController: _sbpController,
-                                  dbpController: _dbpController,
-                                  onCalc: _calcBp,
-                                  sbp: _sbp,
-                                  dbp: _dbp,
-                                  label: _bpLabel,
-                                  category: _bpCategory,
-                                  colorForCategory: _bpColor,
-                                ),
-                                _RiskTab(
-                                  ageController: _ageController,
-                                  sex: _sex,
-                                  onSexChanged: (s) => setState(() => _sex = s),
-                                  smoker: _smoker,
-                                  onSmokerChanged: (v) => setState(() => _smoker = v),
-                                  bmi: _bmi,
-                                  bmiLabel: _bmiLabel,
-                                  bpLabel: _bpLabel,
-                                  bpCategory: _bpCategory,
-                                  sugarMode: _sugarMode,
-                                  glucoseValue: _glucoseValue,
-                                  glucoseLabel: _glucoseLabel,
-                                  a1cValue: _a1cValue,
-                                  a1cLabel: _a1cLabel,
-                                  score: _riskScore(),
-                                  bandForScore: _riskBand,
-                                ),
-                              ],
+                              ),
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 10),
+                            child: Text(
+                              'Educational only — not a diagnosis.',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF4E6A8F),
+                              ),
                             ),
                           ),
                         ],
@@ -448,18 +480,7 @@ class _CalculatorPageState extends State<CalculatorPage>
                     ),
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 10),
-                  child: Text(
-                    'Educational only — not a diagnosis.',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF4E6A8F),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -488,7 +509,7 @@ class _TopHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: color, // header background = blue
+      color: color,
       padding: const EdgeInsets.fromLTRB(8, 8, 16, 12),
       child: Row(
         children: [
@@ -503,12 +524,12 @@ class _TopHeader extends StatelessWidget {
               color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: Colors.white), // icon white
+            child: Icon(icon, color: Colors.white),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, // left aligned
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
@@ -646,7 +667,7 @@ class _PrimaryButton extends StatelessWidget {
         child: Text(
           text,
           style: const TextStyle(
-            color: Colors.white, // calculate text white
+            color: Colors.white,
             fontWeight: FontWeight.w900,
             fontSize: 15.5,
           ),
@@ -785,8 +806,6 @@ class _BmiTab extends StatelessWidget {
             color: colorForBmi(bmi!),
             text: 'BMI: ${bmi!.toStringAsFixed(1)} • $label',
           ),
-        if (bmi == null && label != null)
-          const SizedBox.shrink(),
       ],
     );
   }
@@ -854,7 +873,6 @@ class _SugarTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-
         if (mode == SugarInputMode.glucose) ...[
           DropdownButtonFormField<GlucoseTestType>(
             value: glucoseType,
@@ -901,7 +919,6 @@ class _SugarTab extends StatelessWidget {
           const SizedBox(height: 14),
           _PrimaryButton(text: 'Calculate', onTap: onCalcA1c),
         ],
-
         const SizedBox(height: 14),
         if (txt.isNotEmpty) _ChipBox(color: c, text: txt),
       ],
@@ -937,9 +954,19 @@ class _BpTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       children: [
-        _NumberField(label: 'Systolic (SBP)', controller: sbpController, hint: '120', suffix: 'mmHg'),
+        _NumberField(
+          label: 'Systolic (SBP)',
+          controller: sbpController,
+          hint: '120',
+          suffix: 'mmHg',
+        ),
         const SizedBox(height: 12),
-        _NumberField(label: 'Diastolic (DBP)', controller: dbpController, hint: '80', suffix: 'mmHg'),
+        _NumberField(
+          label: 'Diastolic (DBP)',
+          controller: dbpController,
+          hint: '80',
+          suffix: 'mmHg',
+        ),
         const SizedBox(height: 14),
         _PrimaryButton(text: 'Calculate', onTap: onCalc),
         const SizedBox(height: 14),
@@ -1003,9 +1030,13 @@ class _RiskTab extends StatelessWidget {
   final (band, color) = bandForScore(score);
 
   String sugarSummary = 'Not set';
-  if (sugarMode == SugarInputMode.glucose && glucoseValue != null && glucoseLabel != null) {
+  if (sugarMode == SugarInputMode.glucose &&
+  glucoseValue != null &&
+  glucoseLabel != null) {
   sugarSummary = '${glucoseValue!.toStringAsFixed(0)} mg/dL • $glucoseLabel';
-  } else if (sugarMode == SugarInputMode.a1c && a1cValue != null && a1cLabel != null) {
+  } else if (sugarMode == SugarInputMode.a1c &&
+  a1cValue != null &&
+  a1cLabel != null) {
   sugarSummary = '${a1cValue!.toStringAsFixed(1)}% • $a1cLabel';
   }
 
@@ -1014,13 +1045,17 @@ class _RiskTab extends StatelessWidget {
   bmiSummary = '${bmi!.toStringAsFixed(1)} • $bmiLabel';
   }
 
-  String bpSummary = bpLabel ?? 'Not set';
+  final bpSummary = bpLabel ?? 'Not set';
 
   return ListView(
   children: [
-  _NumberField(label: 'Age', controller: ageController, hint: '35', suffix: 'years'),
+  _NumberField(
+  label: 'Age',
+  controller: ageController,
+  hint: '35',
+  suffix: 'years',
+  ),
   const SizedBox(height: 12),
-
   Container(
   padding: const EdgeInsets.all(6),
   decoration: BoxDecoration(
@@ -1044,9 +1079,7 @@ class _RiskTab extends StatelessWidget {
   ],
   ),
   ),
-
   const SizedBox(height: 12),
-
   SwitchListTile(
   value: smoker,
   onChanged: onSmokerChanged,
@@ -1058,9 +1091,7 @@ class _RiskTab extends StatelessWidget {
   activeColor: const Color(0xFF2F73FF),
   contentPadding: EdgeInsets.zero,
   ),
-
   const SizedBox(height: 10),
-
   Container(
   padding: const EdgeInsets.all(14),
   decoration: BoxDecoration(
@@ -1087,16 +1118,12 @@ class _RiskTab extends StatelessWidget {
   ],
   ),
   ),
-
   const SizedBox(height: 14),
-
   _ChipBox(
   color: color,
   text: 'Screening Score: $score • $band',
   ),
-
   const SizedBox(height: 12),
-
   const Text(
   'This is a simplified screening score, not a clinical ASCVD calculator. For official 10-year ASCVD risk, use a validated tool with cholesterol inputs.',
   style: TextStyle(

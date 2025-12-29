@@ -18,8 +18,6 @@ class MedicationsPage extends StatelessWidget {
   }
 }
 
-
-
 class SimpleInfoPage extends StatelessWidget {
   const SimpleInfoPage({
     super.key,
@@ -38,7 +36,9 @@ class SimpleInfoPage extends StatelessWidget {
   final bool showLanguageChip;
   final bool showPhoneFrame;
 
-  static const _phoneMaxWidth = 520.0;
+  // Fixed frame size (phone frame) as requested.
+  static const double _phoneWidth = 412.0;
+  static const double _phoneHeight = 917.0;
 
   @override
   Widget build(BuildContext context) {
@@ -60,17 +60,43 @@ class SimpleInfoPage extends StatelessWidget {
       ],
     );
 
+    if (!showPhoneFrame) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF3F6FF),
+        body: SafeArea(child: pageBody),
+      );
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FF),
+      // Outside-of-phone background (web background)
+      backgroundColor: const Color(0xFFEEF2FA),
       body: SafeArea(
-        child: showPhoneFrame
-            ? Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _phoneMaxWidth),
-            child: pageBody,
+        child: Center(
+          child: SizedBox(
+            width: _phoneWidth,
+            height: _phoneHeight,
+            child: Container(
+              margin: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x22000000),
+                    blurRadius: 22,
+                    offset: Offset(0, 12),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  color: const Color(0xFFF3F6FF),
+                  child: pageBody,
+                ),
+              ),
+            ),
           ),
-        )
-            : pageBody,
+        ),
       ),
     );
   }
@@ -120,9 +146,7 @@ class _Header extends StatelessWidget {
             )
           else
             const SizedBox(width: 48),
-
           const SizedBox(width: 2),
-
           Expanded(
             child: Text(
               title,
@@ -133,13 +157,8 @@ class _Header extends StatelessWidget {
               ),
             ),
           ),
-
-          // settings/menu
           const AppMenuButton(iconColor: Colors.white),
-
           const SizedBox(width: 8),
-
-          // logo (same size as icon)
           SizedBox(
             width: 44,
             height: 44,
@@ -151,12 +170,10 @@ class _Header extends StatelessWidget {
               ),
             ),
           ),
-
           if (showLanguageChip) ...[
             const SizedBox(width: 10),
             Container(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 40),
                 borderRadius: BorderRadius.circular(14),
@@ -194,39 +211,32 @@ class _MedicationsContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: const [
-
+    return const Column(
+      children: [
         SizedBox(height: 14),
-
         _MedicationCard(
           name: 'Digoxin (Lanoxin)',
-          description:
-          'Helps the heart pump more effectively and controls heart rate',
+          description: 'Helps the heart pump more effectively and controls heart rate',
           dosage: 'Usually given once or twice daily',
         ),
         _MedicationCard(
           name: 'Furosemide (Lasix)',
-          description:
-          'Diuretic that removes extra fluid from the body, reducing heart workload',
+          description: 'Diuretic that removes extra fluid from the body, reducing heart workload',
           dosage: 'Typically given once or twice daily',
         ),
         _MedicationCard(
           name: 'Captopril (Capoten)',
-          description:
-          'ACE inhibitor that relaxes blood vessels and lowers blood pressure',
+          description: 'ACE inhibitor that relaxes blood vessels and lowers blood pressure',
           dosage: 'Usually given 2–3 times daily',
         ),
         _MedicationCard(
           name: 'Enalapril (Vasotec)',
-          description:
-          'Helps blood vessels relax, making it easier for the heart to pump',
+          description: 'Helps blood vessels relax, making it easier for the heart to pump',
           dosage: 'Typically given once or twice daily',
         ),
         _MedicationCard(
           name: 'Spironolactone (Aldactone)',
-          description:
-          'Diuretic that helps remove fluid while preserving potassium',
+          description: 'Diuretic that helps remove fluid while preserving potassium',
           dosage: 'Usually given once or twice daily',
         ),
         _MedicationCard(
@@ -236,13 +246,10 @@ class _MedicationsContent extends StatelessWidget {
         ),
         _MedicationCard(
           name: 'Propranolol (Inderal)',
-          description:
-          'Beta-blocker that slows heart rate and reduces blood pressure',
+          description: 'Beta-blocker that slows heart rate and reduces blood pressure',
           dosage: 'Typically given 2–3 times daily',
         ),
-
         SizedBox(height: 14),
-
         _InfoBox(
           title: 'Important Safety Notes',
           icon: Icons.info_outline_rounded,
@@ -256,9 +263,7 @@ class _MedicationsContent extends StatelessWidget {
             'Keep a list of all medications with you at all times',
           ],
         ),
-
         SizedBox(height: 14),
-
         _InfoBox(
           title: 'When to Contact Your Doctor',
           icon: Icons.info_outline_rounded,
@@ -318,10 +323,10 @@ class _TitleStrip extends StatelessWidget {
             child: Icon(icon, color: Colors.white, size: 22),
           ),
           const SizedBox(width: 12),
-          Expanded(
+          const Expanded(
             child: Text(
-              title,
-              style: const TextStyle(
+              'Medications',
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF1B2B55),
@@ -404,8 +409,7 @@ class _MedicationCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Container(
                   width: double.infinity,
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF3F6FB),
                     borderRadius: BorderRadius.circular(12),

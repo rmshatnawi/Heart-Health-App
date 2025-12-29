@@ -42,6 +42,27 @@ class CartController {
     _recalcAndSet(list);
   }
 
+  // NEW: remove 1 from qty; if qty becomes 0 remove item
+  void removeOne(StoreProduct p) {
+    final list = List<CartItem>.from(items.value);
+    final idx = list.indexWhere((e) => e.product.title == p.title);
+    if (idx < 0) return;
+
+    if (list[idx].qty > 1) {
+      list[idx].qty -= 1;
+    } else {
+      list.removeAt(idx);
+    }
+    _recalcAndSet(list);
+  }
+
+  // NEW: remove item completely
+  void removeItem(StoreProduct p) {
+    final list = List<CartItem>.from(items.value);
+    list.removeWhere((e) => e.product.title == p.title);
+    _recalcAndSet(list);
+  }
+
   void clear() {
     _recalcAndSet(<CartItem>[]);
   }
@@ -91,7 +112,6 @@ class _PaymentPageState extends State<PaymentPage> {
       return;
     }
 
-    // UI-only: no gateway. Immediately ask for delivery location then place order.
     final locationController = TextEditingController();
 
     await showDialog<void>(
@@ -116,10 +136,10 @@ class _PaymentPageState extends State<PaymentPage> {
                 final loc = locationController.text.trim();
                 if (loc.isEmpty) return;
 
-                cart.clear(); // (7) reset basket + counters everywhere
+                cart.clear();
 
-                Navigator.of(ctx).pop(); // close dialog
-                Navigator.of(context).pop(); // back to store
+                Navigator.of(ctx).pop();
+                Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Order placed.')),
                 );
@@ -139,7 +159,6 @@ class _PaymentPageState extends State<PaymentPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F6FF),
       body: SafeArea(
-        // (3) fit phone screen width
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 430),
@@ -154,7 +173,6 @@ class _PaymentPageState extends State<PaymentPage> {
                       children: [
                         const _SecureBanner(),
                         const SizedBox(height: 14),
-
                         ValueListenableBuilder<double>(
                           valueListenable: cart.total,
                           builder: (_, t, __) {
@@ -169,17 +187,15 @@ class _PaymentPageState extends State<PaymentPage> {
                             );
                           },
                         ),
-
                         const SizedBox(height: 14),
 
-                        // (1) basket contents in payment page
+                        // UPDATED: basket with remove controls
                         ValueListenableBuilder<List<CartItem>>(
                           valueListenable: cart.items,
                           builder: (_, list, __) => _BasketCard(items: list),
                         ),
 
                         const SizedBox(height: 18),
-
                         const Text(
                           'Select Payment Method',
                           style: TextStyle(
@@ -189,29 +205,24 @@ class _PaymentPageState extends State<PaymentPage> {
                           ),
                         ),
                         const SizedBox(height: 10),
-
                         _MethodTile(
                           title: 'Credit / Debit Card',
                           subtitle: 'Visa, Mastercard, etc.',
                           icon: Icons.credit_card_rounded,
                           selected: _method == PaymentMethod.card,
-                          onTap: () => setState(() => _method = PaymentMethod.card),
+                          onTap: () =>
+                              setState(() => _method = PaymentMethod.card),
                         ),
                         const SizedBox(height: 12),
-
-                        // (4) removed Digital Wallet
-
                         _MethodTile(
                           title: 'Cash on Delivery',
                           subtitle: 'Pay when you receive',
                           icon: Icons.payments_rounded,
                           selected: _method == PaymentMethod.cod,
-                          // (5) no repetition: just select; UI below changes once
-                          onTap: () => setState(() => _method = PaymentMethod.cod),
+                          onTap: () =>
+                              setState(() => _method = PaymentMethod.cod),
                         ),
-
                         const SizedBox(height: 16),
-
                         if (_method == PaymentMethod.card) ...[
                           const _SectionCardTitle(title: 'Card Details'),
                           const SizedBox(height: 10),
@@ -224,13 +235,13 @@ class _PaymentPageState extends State<PaymentPage> {
                           const SizedBox(height: 18),
                         ] else ...[
                           const _InfoCard(
-                            title: 'You will pay the total amount when the order arrives.',
-                            subtitle:'',
+                            title:
+                            'You will pay the total amount when the order arrives.',
+                            subtitle: '',
                             icon: Icons.payments_outlined,
                           ),
                           const SizedBox(height: 18),
                         ],
-
                         _PrimaryButton(
                           text: 'Pay Securely',
                           onTap: _payFlow,
@@ -414,6 +425,7 @@ class _TotalAmountCard extends StatelessWidget {
   }
 }
 
+// UPDATED: add remove buttons per item (minus / trash)
 class _BasketCard extends StatelessWidget {
   final List<CartItem> items;
   const _BasketCard({required this.items});
@@ -457,42 +469,94 @@ class _BasketCard extends StatelessWidget {
               ),
             )
           else
-            ...items.map(
-                  (e) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        e.product.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF1B2B55),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'x${e.qty}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF6B7C97),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      '\$${e.lineTotal.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF2F73FF),
-                      ),
-                    ),
-                  ],
-                ),
+            ...items.map((e) => _BasketRow(item: e)),
+        ],
+      ),
+    );
+  }
+}
+
+class _BasketRow extends StatelessWidget {
+  final CartItem item;
+  const _BasketRow({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              item.product.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1B2B55),
               ),
             ),
+          ),
+          const SizedBox(width: 10),
+
+          // remove one
+          InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: () => cart.removeOne(item.product),
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F6FF),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: const Color(0xFFE6EEFF)),
+              ),
+              child: const Icon(
+                Icons.remove_rounded,
+                size: 18,
+                color: Color(0xFF1B2B55),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 8),
+          Text(
+            'x${item.qty}',
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF6B7C97),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // remove all
+          InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: () => cart.removeItem(item.product),
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEEF0),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: const Color(0xFFFFC9D1)),
+              ),
+              child: const Icon(
+                Icons.delete_outline_rounded,
+                size: 18,
+                color: Color(0xFFD32F2F),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+          Text(
+            '\$${item.lineTotal.toStringAsFixed(2)}',
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF2F73FF),
+            ),
+          ),
         ],
       ),
     );
@@ -661,7 +725,8 @@ class _CardDetailsForm extends StatelessWidget {
             keyboardType: TextInputType.number,
             decoration: _inputDecoration(
               hint: '1234 5678 9012 3456',
-              suffix: const Icon(Icons.credit_card_rounded, color: Color(0xFF9FB0C9)),
+              suffix: const Icon(Icons.credit_card_rounded,
+                  color: Color(0xFF9FB0C9)),
             ),
           ),
           const SizedBox(height: 14),
@@ -722,7 +787,8 @@ class _CardDetailsForm extends StatelessWidget {
                       obscureText: true,
                       decoration: _inputDecoration(
                         hint: '123',
-                        suffix: const Icon(Icons.lock_outline_rounded, color: Color(0xFF9FB0C9)),
+                        suffix: const Icon(Icons.lock_outline_rounded,
+                            color: Color(0xFF9FB0C9)),
                       ),
                     ),
                   ],
@@ -847,7 +913,6 @@ class _PrimaryButton extends StatelessWidget {
           children: [
             Text(
               text,
-              // (2) make "Pay Securely" white
               style: const TextStyle(
                 fontSize: 15.5,
                 fontWeight: FontWeight.w800,

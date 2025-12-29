@@ -11,6 +11,11 @@ class MedicalConsultationPage extends StatefulWidget {
 }
 
 class _MedicalConsultationPageState extends State<MedicalConsultationPage> {
+  // Frame spec (412x917) + rounder edges
+  static const double _frameW = 412;
+  static const double _frameH = 917;
+  static const double _frameRadius = 28;
+
   int _filterIndex = 0; // 0=All, 1=Available, 2=Busy, 3=Offline
 
   final List<_Doctor> _doctors = const [
@@ -74,29 +79,33 @@ class _MedicalConsultationPageState extends State<MedicalConsultationPage> {
       backgroundColor: const Color(0xFFF5F7FF),
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430), // phone-fit
-            child: Column(
-              children: [
-                _TopHeader(
-                  title: 'Medical Consultation',
-                  subtitle: 'Choose a doctor and start a session',
-                  icon: Icons.medical_information_outlined,
-                  headerColor: blue, // header bg = blue
-                  onBack: () => Navigator.of(context).pop(),
-                ),
-                const SizedBox(height: 10),
-                _buildFilters(),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    itemCount: _filtered.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 14),
-                    itemBuilder: (context, i) => _DoctorCard(doctor: _filtered[i]),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(_frameRadius),
+            child: SizedBox(
+              width: _frameW,
+              height: _frameH,
+              child: Column(
+                children: [
+                  _TopHeader(
+                    title: 'Medical Consultation',
+                    subtitle: '',
+                    icon: Icons.medical_information_outlined,
+                    headerColor: blue,
+                    onBack: () => Navigator.of(context).pop(),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 10),
+                  _buildFilters(),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      itemCount: _filtered.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 14),
+                      itemBuilder: (context, i) => _DoctorCard(doctor: _filtered[i]),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -178,7 +187,7 @@ class _TopHeader extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, // left aligned
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
@@ -213,7 +222,7 @@ class _DoctorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 360, // fixed phone-friendly height
+      height: 360,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),

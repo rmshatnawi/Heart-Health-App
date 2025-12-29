@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
      // home: PreventionTipsPage(),
-      //home: LoginPage(),
+      // home: LoginPage(),
       //  home: SymptomsPage(),
       //  home: HeartHealthPage(),
        // home: MedicalInfoPage(),

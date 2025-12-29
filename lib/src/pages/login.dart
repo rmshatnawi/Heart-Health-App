@@ -19,6 +19,10 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   String? _error;
 
+  // Fixed design frame (Figma frame)
+  static const double _frameW = 412.0;
+  static const double _frameH = 917.0;
+
   @override
   void initState() {
     super.initState();
@@ -102,70 +106,103 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
       body: SafeArea(
         child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: _buildCard(size),
+          // Fixed frame (412x917) + scale entire page to fit any device
+          child: FittedBox(
+            fit: BoxFit.contain,
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: _frameW,
+              height: _frameH,
+              child: _FrameScaffold(
+                child: _buildFrameContent(),
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildCard(Size size) {
+  Widget _buildFrameContent() {
+    // Everything inside assumes 412x917 coordinates.
+    // Use SingleChildScrollView so keyboard / small screens never overflow.
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        child: _buildCard(),
+      ),
+    );
+  }
+
+  Widget _buildCard() {
+    const double cardMaxWidth = 520; // irrelevant in fixed frame, kept safe
+
     return Container(
-      width: size.width * 0.9,
-      constraints: const BoxConstraints(maxWidth: 520),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      width: _frameW * 0.92,
+      constraints: const BoxConstraints(maxWidth: cardMaxWidth),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 18),
+          const SizedBox(height: 8),
 
-          Image.asset('assets/images/logo.png', height: 400),
+          // Logo constrained so it always fits in the 412x917 frame.
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 240,
+              minHeight: 140,
+            ),
+            child: Image.asset(
+              'assets/images/logo.png',
+              fit: BoxFit.contain,
+            ),
+          ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             'Login',
             style: GoogleFonts.inter(
               fontSize: 24,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
               color: const Color(0xFF5A7FB3),
             ),
           ),
 
-          const SizedBox(height: 22),
+          const SizedBox(height: 16),
 
-          _emailField(size),
+          _emailField(),
           const SizedBox(height: 10),
-          _passwordField(size),
+          _passwordField(),
           const SizedBox(height: 6),
 
           Align(
             alignment: Alignment.centerRight,
             child: InkWell(
               onTap: _forgotPassword,
-              child: Text(
-                'Forgot password?',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: const Color(0xFF5A7FB3),
-                  fontWeight: FontWeight.w500,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Text(
+                  'Forgot password?',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: const Color(0xFF5A7FB3),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
           ),
 
           if (_error != null) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               _error!,
               textAlign: TextAlign.center,
@@ -173,22 +210,21 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ],
 
-          const SizedBox(height: 18),
-          _signInButton(size),
           const SizedBox(height: 14),
+          _signInButton(),
+          const SizedBox(height: 12),
 
           _dividerText('Don’t have an account?'),
           const SizedBox(height: 10),
-          _createAccountButton(size),
-          const SizedBox(height: 18),
+
+          _createAccountButton(),
         ],
       ),
     );
   }
 
-  Widget _emailField(Size size) {
+  Widget _emailField() {
     return _inputField(
-      size: size,
       controller: _emailCtrl,
       hint: 'Enter your email',
       icon: Icons.mail_outline_rounded,
@@ -197,9 +233,8 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _passwordField(Size size) {
+  Widget _passwordField() {
     return _inputField(
-      size: size,
       controller: _passCtrl,
       hint: 'Enter your password',
       icon: Icons.lock_outline_rounded,
@@ -209,7 +244,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _inputField({
-    required Size size,
     required TextEditingController controller,
     required String hint,
     required IconData icon,
@@ -219,7 +253,7 @@ class _LoginPageState extends State<LoginPage> {
     final hasText = controller.text.isNotEmpty;
 
     return SizedBox(
-      height: size.height / 12,
+      height: 52,
       child: TextField(
         controller: controller,
         obscureText: obscure,
@@ -227,28 +261,31 @@ class _LoginPageState extends State<LoginPage> {
         style: GoogleFonts.inter(fontSize: 16),
         decoration: InputDecoration(
           hintText: hint,
+          hintStyle: GoogleFonts.inter(fontSize: 14.5),
           filled: true,
           fillColor: hasText ? Colors.transparent : const Color(0xFFF8F7FB),
           prefixIcon: Icon(icon, size: 18),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(40),
             borderSide: BorderSide(
               color: hasText ? const Color(0xFF2CB9B0) : Colors.transparent,
+              width: 1.2,
             ),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(40),
-            borderSide: const BorderSide(color: Color(0xFF2CB9B0)),
+            borderSide: const BorderSide(color: Color(0xFF2CB9B0), width: 1.4),
           ),
         ),
       ),
     );
   }
 
-  Widget _signInButton(Size size) {
+  Widget _signInButton() {
     return SizedBox(
       width: double.infinity,
-      height: size.height / 13,
+      height: 52,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _handleLogin,
         style: ElevatedButton.styleFrom(
@@ -269,7 +306,7 @@ class _LoginPageState extends State<LoginPage> {
           'Sign in',
           style: GoogleFonts.inter(
             fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: Colors.white,
           ),
         ),
@@ -288,6 +325,7 @@ class _LoginPageState extends State<LoginPage> {
             style: GoogleFonts.inter(
               fontSize: 12,
               color: const Color(0xFF5A7FB3),
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
@@ -296,14 +334,14 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _createAccountButton(Size size) {
+  Widget _createAccountButton() {
     return SizedBox(
       width: double.infinity,
-      height: size.height / 13,
+      height: 52,
       child: OutlinedButton(
         onPressed: _goToSignUp,
         style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFF5A7FB3)),
+          side: const BorderSide(color: Color(0xFF5A7FB3), width: 1.2),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         ),
         child: Text(
@@ -311,10 +349,29 @@ class _LoginPageState extends State<LoginPage> {
           style: GoogleFonts.inter(
             fontSize: 16,
             color: const Color(0xFF5A7FB3),
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
+    );
+  }
+}
+
+
+class _FrameScaffold extends StatelessWidget {
+  const _FrameScaffold({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+
+    return MediaQuery(
+      data: mq.copyWith(
+        textScaler: const TextScaler.linear(1.0),
+      ),
+      child: child,
     );
   }
 }

@@ -13,216 +13,436 @@ class PatientCarePage extends StatefulWidget {
 }
 
 class _PatientCarePageState extends State<PatientCarePage> {
-  static const double _phoneMaxWidth = 430.0;
+  // Frame spec (412x917) + rounder edges like other pages
+  static const double _frameW = 412;
+  static const double _frameH = 917;
+  static const double _frameRadius = 28;
 
-  final List<_ReminderItem> _reminders = [
-    _ReminderItem(
-      title: 'Take Morning Medication',
-      time: '08:00 AM',
-      tag: 'medication',
-      done: false,
-    ),
-    _ReminderItem(
-      title: 'Blood Pressure Check',
-      time: '02:00 PM',
-      tag: 'measurement',
-      done: false,
-    ),
-    _ReminderItem(
-      title: 'Physical Therapy Session',
-      time: '04:30 PM',
-      tag: 'appointment',
-      done: false,
-    ),
-    _ReminderItem(
-      title: 'Evening Medication',
-      time: '08:00 PM',
-      tag: 'medication',
-      done: false,
-    ),
+  // RESET: no default plans/stats. Keep UI, but data starts empty/zero.
+  final List<_CarePlanData> _plans = [];
+  final List<_ReminderItem> _reminders = [];
+
+  // For Schedule Appointment -> list of doctor names
+  final List<String> _doctorNames = const [
+    'Dr. Sarah Mitchell',
+    'Dr. Michael Chen',
+    'Dr. Emily Rodriguez',
+    'Dr. Adam Johnson',
   ];
 
   @override
   Widget build(BuildContext context) {
+    const blue = Color(0xFF2F73FF);
+
+    final stats = <_StatCardData>[
+      _StatCardData(
+        value: '${_plans.where((p) => p.isActive).length}',
+        label: 'Active Care Plans',
+        badge: _plans.where((p) => p.isActive).isEmpty ? 'None' : 'Active',
+        icon: Icons.show_chart,
+        badgeColor: const Color(0xFFE7F7EF),
+        iconBg: const Color(0xFFEAF2FF),
+        iconColor: const Color(0xFF2F73FF),
+      ),
+      _StatCardData(
+        value: '0',
+        label: 'This Week',
+        badge: 'Upcoming',
+        icon: Icons.calendar_month,
+        badgeColor: const Color(0xFFF3ECFF),
+        iconBg: const Color(0xFFF3ECFF),
+        iconColor: const Color(0xFF7B61FF),
+      ),
+      _StatCardData(
+        value: '0',
+        label: 'Care Team Members',
+        badge: 'Available',
+        icon: Icons.groups,
+        badgeColor: const Color(0xFFFFF2E6),
+        iconBg: const Color(0xFFFFF2E6),
+        iconColor: const Color(0xFFFF8A00),
+      ),
+      _StatCardData(
+        value: '${_reminders.where((r) => !r.done).length}',
+        label: "Today's Tasks",
+        badge: _reminders.where((r) => !r.done).isEmpty ? 'None' : 'Pending',
+        icon: Icons.task_alt,
+        badgeColor: const Color(0xFFE7F7EF),
+        iconBg: const Color(0xFFE7F7EF),
+        iconColor: const Color(0xFF16A34A),
+      ),
+    ];
+
     return Scaffold(
       backgroundColor: const Color(0xFFF3F6FF),
-
-      // IMPORTANT: no AppBar here.
-      // We render a phone-width header inside the body so it does NOT stretch on web.
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _phoneMaxWidth),
-            child: Column(
-              children: [
-                _PhoneHeader(
-                  onBack: () => Navigator.of(context).pop(),
-                  onMenu: (action) async {
-                    switch (action) {
-                      case _MenuAction.profile:
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const ProfilePage()),
-                        );
-                        break;
-                      case _MenuAction.settings:
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const SettingsPage()),
-                        );
-                        break;
-                      case _MenuAction.privacy:
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const PrivacyPage()),
-                        );
-                        break;
-                      case _MenuAction.logout:
-                      // Put your logout logic here if you need it.
-                        break;
-                    }
-                  },
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-                    child: Column(
-                      children: [
-                        _HeroBanner(
-                          title: 'Welcome Back, Sarah',
-                          subtitle:
-                          'Your personalized care journey continues. We\'re here to support you every step of the way.',
-                          onSchedule: () {},
-                          image: const NetworkImage(
-                            'https://images.unsplash.com/photo-1511174511562-5f7f18b874f8?auto=format&fit=crop&w=1200&q=60',
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(_frameRadius),
+            child: SizedBox(
+              width: _frameW,
+              height: _frameH,
+              child: Column(
+                children: [
+                  _PhoneHeader(
+                    onBack: () => Navigator.of(context).pop(),
+                    onMenu: (action) async {
+                      switch (action) {
+                        case _MenuAction.profile:
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const ProfilePage()),
+                          );
+                          break;
+                        case _MenuAction.settings:
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const SettingsPage()),
+                          );
+                          break;
+                        case _MenuAction.privacy:
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const PrivacyPage()),
+                          );
+                          break;
+                        case _MenuAction.logout:
+                          break;
+                      }
+                    },
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+                      child: Column(
+                        children: [
+                          _HeroBanner(
+                            title: 'Welcome Back',
+                            subtitle:
+                            'Your care dashboard is ready. Add your plans and reminders to get started.',
+                            onSchedule: _openDoctorPicker,
+                            image: const NetworkImage(
+                              'https://images.unsplash.com/photo-1511174511562-5f7f18b874f8?auto=format&fit=crop&w=1200&q=60',
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
+                          const SizedBox(height: 16),
 
-                        const _StatsRow(
-                          items: [
-                            _StatCardData(
-                              value: '3',
-                              label: 'Active Care Plans',
-                              badge: 'Active',
-                              icon: Icons.show_chart,
-                              badgeColor: Color(0xFFE7F7EF),
-                              iconBg: Color(0xFFEAF2FF),
-                              iconColor: Color(0xFF2F73FF),
+                          _StatsRow(items: stats),
+                          const SizedBox(height: 16),
+
+                          _SectionHeader(
+                            icon: Icons.health_and_safety,
+                            title: 'Active Care Plans',
+                            actionText: 'Add Plan',
+                            onAction: _addPlanDialog,
+                          ),
+                          const SizedBox(height: 10),
+
+                          if (_plans.isEmpty)
+                            const _EmptyCard(
+                              icon: Icons.health_and_safety_outlined,
+                              title: 'No plans yet',
+                              subtitle: 'Add a care plan to track progress and next dates.',
+                            )
+                          else
+                            Column(
+                              children: [
+                                for (int i = 0; i < _plans.length; i++) ...[
+                                  _CarePlanCard(
+                                    title: _plans[i].title,
+                                    subtitle: _plans[i].subtitle,
+                                    progress: _plans[i].progress,
+                                    nextDate: _plans[i].nextDate,
+                                    statusText: _plans[i].isActive ? 'active' : 'paused',
+                                    statusColor: _plans[i].isActive
+                                        ? const Color(0xFFE7F7EF)
+                                        : const Color(0xFFF1F5FF),
+                                    statusTextColor: _plans[i].isActive
+                                        ? const Color(0xFF16A34A)
+                                        : const Color(0xFF2F73FF),
+                                    leadingIcon: _plans[i].icon,
+                                    leadingBg: _plans[i].iconBg,
+                                    leadingIconColor: _plans[i].iconColor,
+                                    progressColor: _plans[i].progressColor,
+                                    onDetails: () {},
+                                  ),
+                                  if (i != _plans.length - 1) const SizedBox(height: 12),
+                                ],
+                              ],
                             ),
-                            _StatCardData(
-                              value: '5',
-                              label: 'This Week',
-                              badge: 'Upcoming',
-                              icon: Icons.calendar_month,
-                              badgeColor: Color(0xFFF3ECFF),
-                              iconBg: Color(0xFFF3ECFF),
-                              iconColor: Color(0xFF7B61FF),
+
+                          const SizedBox(height: 16),
+
+                          _SectionHeader(
+                            icon: Icons.notifications_active_outlined,
+                            title: "Today's Reminders",
+                            actionText: 'Add Reminder',
+                            onAction: _addReminderDialog,
+                          ),
+                          const SizedBox(height: 10),
+
+                          if (_reminders.isEmpty)
+                            const _EmptyCard(
+                              icon: Icons.notifications_none_rounded,
+                              title: 'No reminders yet',
+                              subtitle:
+                              'Add reminders in the same card format as the examples.',
+                            )
+                          else
+                            _ReminderList(
+                              items: _reminders,
+                              onToggle: (index, value) {
+                                setState(() {
+                                  _reminders[index] =
+                                      _reminders[index].copyWith(done: value);
+                                });
+                              },
+                              onDelete: (index) {
+                                setState(() => _reminders.removeAt(index));
+                              },
                             ),
-                            _StatCardData(
-                              value: '3',
-                              label: 'Care Team Members',
-                              badge: 'Available',
-                              icon: Icons.groups,
-                              badgeColor: Color(0xFFFFF2E6),
-                              iconBg: Color(0xFFFFF2E6),
-                              iconColor: Color(0xFFFF8A00),
-                            ),
-                            _StatCardData(
-                              value: '4',
-                              label: 'Today\'s Tasks',
-                              badge: 'Pending',
-                              icon: Icons.task_alt,
-                              badgeColor: Color(0xFFE7F7EF),
-                              iconBg: Color(0xFFE7F7EF),
-                              iconColor: Color(0xFF16A34A),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        _SectionHeader(
-                          icon: Icons.health_and_safety,
-                          title: 'Active Care Plans',
-                          actionText: 'View All',
-                          onAction: () {},
-                        ),
-                        const SizedBox(height: 10),
-
-                        _CarePlanCard(
-                          title: 'Post-Surgery Recovery',
-                          subtitle:
-                          'Comprehensive recovery plan with physical therapy and medication management',
-                          progress: 0.65,
-                          nextDate: 'Dec 22, 2025',
-                          statusText: 'active',
-                          statusColor: const Color(0xFFE7F7EF),
-                          statusTextColor: const Color(0xFF16A34A),
-                          leadingIcon: Icons.show_chart,
-                          leadingBg: const Color(0xFFEAF2FF),
-                          leadingIconColor: const Color(0xFF2F73FF),
-                          progressColor: const Color(0xFF2F73FF),
-                          onDetails: () {},
-                        ),
-                        const SizedBox(height: 12),
-
-                        _CarePlanCard(
-                          title: 'Diabetes Management',
-                          subtitle: 'Blood sugar monitoring, diet planning, and regular check-ups',
-                          progress: 0.80,
-                          nextDate: 'Dec 20, 2025',
-                          statusText: 'active',
-                          statusColor: const Color(0xFFE7F7EF),
-                          statusTextColor: const Color(0xFF16A34A),
-                          leadingIcon: Icons.medical_services,
-                          leadingBg: const Color(0xFFE7F7EF),
-                          leadingIconColor: const Color(0xFF16A34A),
-                          progressColor: const Color(0xFF16A34A),
-                          onDetails: () {},
-                        ),
-                        const SizedBox(height: 12),
-
-                        _CarePlanCard(
-                          title: 'Cardiac Care Program',
-                          subtitle: 'Heart health monitoring and lifestyle modification guidance',
-                          progress: 0.45,
-                          nextDate: 'Dec 25, 2025',
-                          statusText: 'active',
-                          statusColor: const Color(0xFFEAF2FF),
-                          statusTextColor: const Color(0xFF2F73FF),
-                          leadingIcon: Icons.favorite,
-                          leadingBg: const Color(0xFFFFE6EA),
-                          leadingIconColor: const Color(0xFFE11D48),
-                          progressColor: const Color(0xFFE11D48),
-                          onDetails: () {},
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        _SectionHeader(
-                          icon: Icons.notifications_active_outlined,
-                          title: 'Today\'s Reminders',
-                          actionText: 'Add Task',
-                          onAction: () {},
-                        ),
-                        const SizedBox(height: 10),
-
-                        _ReminderList(
-                          items: _reminders,
-                          onToggle: (index, value) {
-                            setState(() {
-                              _reminders[index] = _reminders[index].copyWith(done: value);
-                            });
-                          },
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+
+
+
+  Future<void> _openDoctorPicker() async {
+    const frameW = 300.0;
+
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: false,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: frameW),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE2E8F0),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Row(
+                        children: [
+                          Icon(Icons.calendar_month, color: Color(0xFF2F73FF)),
+                          SizedBox(width: 10),
+                          Text(
+                            'Choose a Doctor',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF1B2B55),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Flexible(
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: _doctorNames.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (c, i) {
+                            final name = _doctorNames[i];
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEAF2FF),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.person,
+                                    color: Color(0xFF2F73FF)),
+                              ),
+                              title: Text(
+                                name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF1B2B55),
+                                ),
+                              ),
+                              trailing: const Icon(Icons.chevron_right),
+                              onTap: () => Navigator.of(ctx).pop(name),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selected != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Selected: $selected')),
+      );
+    }
+  }
+
+
+  Future<void> _addPlanDialog() async {
+    final titleCtrl = TextEditingController();
+    final subtitleCtrl = TextEditingController();
+    final nextDateCtrl = TextEditingController();
+    double progress = 0.0;
+    bool active = true;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Add Care Plan'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextField(
+                  controller: titleCtrl,
+                  decoration: const InputDecoration(labelText: 'Plan title'),
+                ),
+                TextField(
+                  controller: subtitleCtrl,
+                  decoration: const InputDecoration(labelText: 'Plan description'),
+                ),
+                TextField(
+                  controller: nextDateCtrl,
+                  decoration: const InputDecoration(labelText: 'Next date (e.g. Jan 10, 2026)'),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Text('Progress'),
+                    Expanded(
+                      child: Slider(
+                        value: progress,
+                        onChanged: (v) => setState(() => progress = v),
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text('Active'),
+                    const Spacer(),
+                    StatefulBuilder(
+                      builder: (ctx2, setLocal) {
+                        return Switch(
+                          value: active,
+                          onChanged: (v) => setLocal(() => active = v),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+            ElevatedButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Save')),
+          ],
+        );
+      },
+    );
+
+    if (saved == true && titleCtrl.text.trim().isNotEmpty) {
+      setState(() {
+        _plans.add(
+          _CarePlanData(
+            title: titleCtrl.text.trim(),
+            subtitle: subtitleCtrl.text.trim().isEmpty
+                ? 'Custom care plan'
+                : subtitleCtrl.text.trim(),
+            progress: progress.clamp(0, 1),
+            nextDate: nextDateCtrl.text.trim().isEmpty ? '—' : nextDateCtrl.text.trim(),
+            isActive: active,
+            icon: Icons.health_and_safety,
+            iconBg: const Color(0xFFEAF2FF),
+            iconColor: const Color(0xFF2F73FF),
+            progressColor: const Color(0xFF2F73FF),
+          ),
+        );
+      });
+    }
+  }
+
+  Future<void> _addReminderDialog() async {
+    final titleCtrl = TextEditingController();
+    final timeCtrl = TextEditingController();
+    final tagCtrl = TextEditingController(text: 'medication');
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Add Reminder'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextField(
+                  controller: titleCtrl,
+                  decoration: const InputDecoration(labelText: 'Title (example format)'),
+                ),
+                TextField(
+                  controller: timeCtrl,
+                  decoration: const InputDecoration(labelText: 'Time (e.g. 08:00 AM)'),
+                ),
+                TextField(
+                  controller: tagCtrl,
+                  decoration: const InputDecoration(labelText: 'Tag (medication / measurement / appointment)'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+            ElevatedButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Add')),
+          ],
+        );
+      },
+    );
+
+    if (saved == true && titleCtrl.text.trim().isNotEmpty) {
+      setState(() {
+        _reminders.add(
+          _ReminderItem(
+            title: titleCtrl.text.trim(),
+            time: timeCtrl.text.trim().isEmpty ? '—' : timeCtrl.text.trim(),
+            tag: tagCtrl.text.trim().isEmpty ? 'reminder' : tagCtrl.text.trim(),
+            done: false,
+          ),
+        );
+      });
+    }
   }
 }
 
@@ -440,7 +660,6 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Make cards taller to avoid overflow on web/phone.
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -778,10 +997,12 @@ class _CarePlanCard extends StatelessWidget {
 class _ReminderList extends StatelessWidget {
   final List<_ReminderItem> items;
   final void Function(int index, bool value) onToggle;
+  final void Function(int index) onDelete;
 
   const _ReminderList({
     required this.items,
     required this.onToggle,
+    required this.onDelete,
   });
 
   @override
@@ -794,6 +1015,7 @@ class _ReminderList extends StatelessWidget {
           child: _ReminderTile(
             item: it,
             onChanged: (v) => onToggle(i, v),
+            onDelete: () => onDelete(i),
           ),
         );
       }),
@@ -827,10 +1049,12 @@ class _ReminderItem {
 class _ReminderTile extends StatelessWidget {
   final _ReminderItem item;
   final ValueChanged<bool> onChanged;
+  final VoidCallback onDelete;
 
   const _ReminderTile({
     required this.item,
     required this.onChanged,
+    required this.onDelete,
   });
 
   @override
@@ -900,8 +1124,101 @@ class _ReminderTile extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: onDelete,
+            icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFF94A3B8)),
+          ),
         ],
       ),
     );
   }
+}
+
+class _EmptyCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _EmptyCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 235),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE6ECFF)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAF2FF),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: const Color(0xFF2F73FF)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF1B2B55),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF60709A),
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CarePlanData {
+  final String title;
+  final String subtitle;
+  final double progress;
+  final String nextDate;
+  final bool isActive;
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+  final Color progressColor;
+
+  const _CarePlanData({
+    required this.title,
+    required this.subtitle,
+    required this.progress,
+    required this.nextDate,
+    required this.isActive,
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.progressColor,
+  });
 }

@@ -10,6 +10,9 @@ class StorePage extends StatefulWidget {
 }
 
 class _StorePageState extends State<StorePage> {
+  static const double _frameW = 412.0;
+  static const double _frameH = 917.0;
+
   final TextEditingController _search = TextEditingController();
 
   final List<String> _categories = const [
@@ -81,148 +84,162 @@ class _StorePageState extends State<StorePage> {
     final items = _filtered;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FF),
+      // outside background (web/desktop)
+      backgroundColor: const Color(0xFFEEF2FA),
       body: SafeArea(
-        // (1) fit phone screen width
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child: Column(
-              children: [
-                _TopHeader(
-                  title: 'You Need It Store',
-                  subtitle: 'Medical Supplies',
-                  onBack: () => Navigator.of(context).pop(),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ValueListenableBuilder<int>(
-                          valueListenable: cart.itemCount,
-                          builder: (_, count, __) {
-                            return _SearchRow(
-                              controller: _search,
-                              cartCount: count,
-                              onCartTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                      builder: (_) => const PaymentPage()),
-                                );
-                              },
-                              onChanged: (_) => setState(() {}),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 18),
-                        const Text(
-                          'Categories',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF1B2B55),
+          // FIXED FRAME SIZE
+          child: SizedBox(
+            width: _frameW,
+            height: _frameH,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Scaffold(
+                backgroundColor: const Color(0xFFF3F6FF),
+                body: SafeArea(
+                  child: Column(
+                    children: [
+                      _TopHeader(
+                        title: 'You Need It Store',
+                        subtitle: 'Medical Supplies',
+                        onBack: () => Navigator.of(context).pop(),
+                      ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ValueListenableBuilder<int>(
+                                valueListenable: cart.itemCount,
+                                builder: (_, count, __) {
+                                  return _SearchRow(
+                                    controller: _search,
+                                    cartCount: count,
+                                    onCartTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => const PaymentPage(),
+                                        ),
+                                      );
+                                    },
+                                    onChanged: (_) => setState(() {}),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 18),
+                              const Text(
+                                'Categories',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF1B2B55),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                height: 44,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: _categories.length,
+                                  separatorBuilder: (_, __) =>
+                                  const SizedBox(width: 10),
+                                  itemBuilder: (context, i) {
+                                    final selected = i == _selectedCategory;
+                                    return _CategoryChip(
+                                      text: _categories[i],
+                                      selected: selected,
+                                      icon: _categoryIcon(_categories[i]),
+                                      onTap: () =>
+                                          setState(() => _selectedCategory = i),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              Row(
+                                mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Featured Products',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF1B2B55),
+                                    ),
+                                  ),
+                                  Text(
+                                    '${items.length} items',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF6B7C97),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              GridView.builder(
+                                itemCount: items.length,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 14,
+                                  crossAxisSpacing: 14,
+                                  childAspectRatio: 0.74,
+                                ),
+                                itemBuilder: (context, index) {
+                                  final p = items[index];
+                                  return _ProductCard(
+                                    product: p,
+                                    onFavTap: () {},
+                                    onAddTap: () {
+                                      // (1) add to basket model
+                                      cart.add(p);
+                                    },
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 18),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 52,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF2F73FF),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => const PaymentPage(),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text(
+                                    'Go to Payment',
+                                    style: TextStyle(
+                                      fontSize: 15.5,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          height: 44,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _categories.length,
-                            separatorBuilder: (_, __) =>
-                            const SizedBox(width: 10),
-                            itemBuilder: (context, i) {
-                              final selected = i == _selectedCategory;
-                              return _CategoryChip(
-                                text: _categories[i],
-                                selected: selected,
-                                icon: _categoryIcon(_categories[i]),
-                                onTap: () => setState(() => _selectedCategory = i),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Featured Products',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF1B2B55),
-                              ),
-                            ),
-                            Text(
-                              '${items.length} items',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF6B7C97),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        GridView.builder(
-                          itemCount: items.length,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 14,
-                            crossAxisSpacing: 14,
-                            childAspectRatio: 0.74,
-                          ),
-                          itemBuilder: (context, index) {
-                            final p = items[index];
-                            return _ProductCard(
-                              product: p,
-                              onFavTap: () {},
-                              onAddTap: () {
-                                // (1) add to basket model
-                                cart.add(p);
-                              },
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 18),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2F73FF),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              elevation: 0,
-                            ),
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                    builder: (_) => const PaymentPage()),
-                              );
-                            },
-                            child: const Text(
-                              'Go to Payment',
-                              style: TextStyle(
-                                fontSize: 15.5,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -261,7 +278,6 @@ class _TopHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     const blue = Color(0xFF2F73FF);
 
-    // header background color = icon color, icon white
     return Container(
       color: blue,
       padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),

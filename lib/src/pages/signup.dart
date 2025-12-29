@@ -20,6 +20,9 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _isLoading = false;
   String? _error;
 
+  static const double _frameW = 412.0;
+  static const double _frameH = 917.0;
+
   @override
   void initState() {
     super.initState();
@@ -78,7 +81,6 @@ class _SignUpPageState extends State<SignUpPage> {
 
       final uid = cred.user!.uid;
 
-      // Create user in Firestore (minimal model)
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'email': email,
         'role': 'patient',
@@ -90,12 +92,7 @@ class _SignUpPageState extends State<SignUpPage> {
         MaterialPageRoute(builder: (_) => const HomePage()),
             (route) => false,
       );
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        _error = e.message ?? 'Sign up failed';
-        _isLoading = false;
-      });
-    } catch (_) {
+    } catch (e) {
       setState(() {
         _error = 'Sign up failed';
         _isLoading = false;
@@ -105,76 +102,22 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F8F8),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
       body: SafeArea(
         child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Container(
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              width: size.width * 0.9,
-              constraints: const BoxConstraints(maxWidth: 520),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20.0),
-                color: Colors.white,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 6),
-                  Image.asset(
-                    'assets/images/logo.png',
-                    height: 180,
-                    width: 180,
-                    fit: BoxFit.contain,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Sign Up',
-                    style: GoogleFonts.inter(
-                      fontSize: 22,
-                      color: const Color(0xFF21899C),
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-
-                  _emailField(size),
-                  const SizedBox(height: 10),
-                  _passwordField(size, _passCtrl, 'Create password'),
-                  const SizedBox(height: 10),
-                  _passwordField(size, _confirmCtrl, 'Confirm password'),
-                  const SizedBox(height: 10),
-
-                  if (_error != null) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.red, fontSize: 12.5),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-
-                  const SizedBox(height: 10),
-                  _signUpButton(size),
-                  const SizedBox(height: 18),
-                ],
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: SizedBox(
+              width: _frameW,
+              height: _frameH,
+              child: _FrameScaffold(
+                child: Container(
+                  // FIX: background fills the ENTIRE frame
+                  width: _frameW,
+                  height: _frameH,
+                  color: const Color(0xFFF8F8F8),
+                  child: _buildFrameContent(),
+                ),
               ),
             ),
           ),
@@ -183,115 +126,182 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  Widget _emailField(Size size) {
+  Widget _buildFrameContent() {
+    return Column(
+      children: [
+        SizedBox(
+          height: 56,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
+              child: _buildCard(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCard() {
+    return Container(
+      width: _frameW * 0.92,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            'assets/images/logo.png',
+            height: 170,
+            width: 170,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Sign Up',
+            style: GoogleFonts.inter(
+              fontSize: 22,
+              color: const Color(0xFF21899C),
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _emailField(),
+          const SizedBox(height: 10),
+          _passwordField(_passCtrl, 'Create password'),
+          const SizedBox(height: 10),
+          _passwordField(_confirmCtrl, 'Confirm password'),
+          const SizedBox(height: 10),
+          if (_error != null) ...[
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.red, fontSize: 12.5),
+            ),
+            const SizedBox(height: 8),
+          ],
+          _signUpButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _emailField() {
     final hasText = _emailCtrl.text.isNotEmpty;
-
-    return SizedBox(
-      height: size.height / 12,
-      child: TextField(
-        controller: _emailCtrl,
-        style: GoogleFonts.inter(fontSize: 16.0, color: const Color(0xFF151624)),
-        maxLines: 1,
-        keyboardType: TextInputType.emailAddress,
-        cursorColor: const Color(0xFF151624),
-        decoration: InputDecoration(
-          hintText: 'Enter your email',
-          hintStyle: GoogleFonts.inter(
-            fontSize: 14.0,
-            color: const Color(0xFF151624).withValues(alpha: 128),
-          ),
-          fillColor: hasText ? Colors.transparent : const Color.fromRGBO(248, 247, 251, 1),
-          filled: true,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(40),
-            borderSide: BorderSide(
-              color: hasText ? const Color.fromRGBO(44, 185, 176, 1) : Colors.transparent,
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(40),
-            borderSide: const BorderSide(color: Color.fromRGBO(44, 185, 176, 1)),
-          ),
-          prefixIcon: Icon(
-            Icons.mail_outline_rounded,
-            color: hasText
-                ? const Color.fromRGBO(44, 185, 176, 1)
-                : const Color(0xFF151624).withValues(alpha: 128),
-            size: 18,
-          ),
-        ),
-      ),
+    return _inputField(
+      controller: _emailCtrl,
+      hint: 'Enter your email',
+      icon: Icons.mail_outline_rounded,
+      hasText: hasText,
+      obscure: false,
     );
   }
 
-  Widget _passwordField(Size size, TextEditingController ctrl, String hint) {
+  Widget _passwordField(TextEditingController ctrl, String hint) {
     final hasText = ctrl.text.isNotEmpty;
+    return _inputField(
+      controller: ctrl,
+      hint: hint,
+      icon: Icons.lock_outline_rounded,
+      hasText: hasText,
+      obscure: true,
+    );
+  }
 
+  Widget _inputField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    required bool hasText,
+    required bool obscure,
+  }) {
     return SizedBox(
-      height: size.height / 12,
+      height: 52,
       child: TextField(
-        controller: ctrl,
-        style: GoogleFonts.inter(fontSize: 16.0, color: const Color(0xFF151624)),
-        maxLines: 1,
-        keyboardType: TextInputType.visiblePassword,
-        obscureText: true,
-        cursorColor: const Color(0xFF151624),
+        controller: controller,
+        obscureText: obscure,
+        style: GoogleFonts.inter(fontSize: 16),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: GoogleFonts.inter(
-            fontSize: 14.0,
-            color: const Color(0xFF151624).withValues(alpha: 128),
-          ),
-          fillColor: hasText ? Colors.transparent : const Color.fromRGBO(248, 247, 251, 1),
           filled: true,
+          fillColor:
+          hasText ? Colors.transparent : const Color(0xFFF8F7FB),
+          prefixIcon: Icon(icon, size: 18),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(40),
             borderSide: BorderSide(
-              color: hasText ? const Color.fromRGBO(44, 185, 176, 1) : Colors.transparent,
+              color: hasText
+                  ? const Color(0xFF2CB9B0)
+                  : Colors.transparent,
             ),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(40),
-            borderSide: const BorderSide(color: Color.fromRGBO(44, 185, 176, 1)),
-          ),
-          prefixIcon: Icon(
-            Icons.lock_outline_rounded,
-            color: hasText
-                ? const Color.fromRGBO(44, 185, 176, 1)
-                : const Color(0xFF151624).withValues(alpha: 128),
-            size: 18,
+            borderSide:
+            const BorderSide(color: Color(0xFF2CB9B0)),
           ),
         ),
       ),
     );
   }
 
-  Widget _signUpButton(Size size) {
+  Widget _signUpButton() {
     return SizedBox(
       width: double.infinity,
-      height: size.height / 13,
+      height: 52,
       child: ElevatedButton(
+        onPressed: _isLoading ? null : _handleSignUp,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF21899C),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           elevation: 0,
         ),
-        onPressed: _isLoading ? null : _handleSignUp,
         child: _isLoading
             ? const SizedBox(
           width: 18,
           height: 18,
-          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Colors.white,
+          ),
         )
             : Text(
           'Create account',
           style: GoogleFonts.inter(
-            fontSize: 16.0,
+            fontSize: 16,
             color: Colors.white,
             fontWeight: FontWeight.w600,
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FrameScaffold extends StatelessWidget {
+  const _FrameScaffold({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    return MediaQuery(
+      data: mq.copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: child,
     );
   }
 }

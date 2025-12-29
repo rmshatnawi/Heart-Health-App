@@ -19,7 +19,10 @@ import 'privacy.dart' as privacy_page;
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  static const double _phoneMaxWidth = 430.0;
+  // Fixed frame size (phone frame) as requested.
+  static const double _phoneWidth = 412.0;
+  static const double _phoneHeight = 917.0;
+
   static const _accent = Color(0xFF21899C);
   static const _tileBlue = Color(0xFF2F73FF);
 
@@ -30,176 +33,202 @@ class HomePage extends StatelessWidget {
       backgroundColor: const Color(0xFFEEF2FA),
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _phoneMaxWidth),
-            child: LayoutBuilder(
-              builder: (context, viewport) {
-                return Container(
-                  // Make the "phone" fill the available height so it doesn't shrink to content.
-                  height: viewport.maxHeight,
-                  margin: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x22000000),
-                        blurRadius: 22,
-                        offset: Offset(0, 12),
-                      ),
-                    ],
+          child: SizedBox(
+            width: _phoneWidth,
+            height: _phoneHeight,
+            child: Container(
+              margin: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x22000000),
+                    blurRadius: 22,
+                    offset: Offset(0, 12),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xFFD9E9FF), Color(0xFFCFE2FF)],
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
                     child: Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Color(0xFFD9E9FF), Color(0xFFCFE2FF)],
-                        ),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 230),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(18),
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 230),
-                            borderRadius: BorderRadius.circular(20),
+                      child: Column(
+                        children: [
+                          const _HeaderMenu(),
+                          const SizedBox(height: 14),
+                          const Text(
+                            'Healthcare Services',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1B2B55),
+                            ),
                           ),
-                          child: Column(
-                            children: [
-                              const _HeaderMenu(),
-                              const SizedBox(height: 14),
-                              const Text(
-                                'Healthcare Services',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF1B2B55),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
+                          const SizedBox(height: 16),
 
-                              // Fill the remaining height with the grid,
-                              // and compute aspect ratio so tiles expand vertically (no empty space).
-                              Expanded(
-                                child: LayoutBuilder(
-                                  builder: (context, gridBox) {
-                                    const cols = 3;
-                                    const rows = 3;
-                                    const spacing = 14.0;
+                          // Fill the remaining height with the grid,
+                          // and compute aspect ratio so tiles expand vertically (no empty space).
+                          Expanded(
+                            child: LayoutBuilder(
+                              builder: (context, gridBox) {
+                                const cols = 3;
+                                const rows = 3;
+                                const spacing = 14.0;
 
-                                    final w = gridBox.maxWidth;
-                                    final h = gridBox.maxHeight;
+                                final w = gridBox.maxWidth;
+                                final h = gridBox.maxHeight;
 
-                                    final tileW = (w - spacing * (cols - 1)) / cols;
-                                    final tileH = (h - spacing * (rows - 1)) / rows;
+                                final tileW =
+                                    (w - spacing * (cols - 1)) / cols;
+                                final tileH =
+                                    (h - spacing * (rows - 1)) / rows;
 
-                                    final aspect = (tileH <= 0) ? 1.0 : (tileW / tileH);
+                                final aspect =
+                                (tileH <= 0) ? 1.0 : (tileW / tileH);
 
-                                    return GridView(
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: cols,
-                                        mainAxisSpacing: spacing,
-                                        crossAxisSpacing: spacing,
-                                        childAspectRatio: aspect,
-                                      ),
-                                      children: [
-                                        _HomeTile(
-                                          title: 'Medical Info',
-                                          icon: Icons.favorite_border,
-                                          onTap: () {
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(builder: (_) => const MedicalInfoPage()),
-                                            );
-                                          },
-                                        ),
-                                        _HomeTile(
-                                          title: 'Medical Store',
-                                          icon: Icons.store,
-                                          onTap: () {
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(builder: (_) => const StorePage()),
-                                            );
-                                          },
-                                        ),
-                                        _HomeTile(
-                                          title: 'Calculator',
-                                          icon: Icons.calculate,
-                                          onTap: () {
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(builder: (_) => const CalculatorPage()),
-                                            );
-                                          },
-                                        ),
-                                        _HomeTile(
-                                          title: 'Payment',
-                                          icon: Icons.attach_money,
-                                          onTap: () {
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(builder: (_) => const PaymentPage()),
-                                            );
-                                          },
-                                        ),
-                                        _HomeTile(
-                                          title: 'Solutions',
-                                          icon: Icons.menu_book,
-                                          onTap: () {
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(builder: (_) => const SolutionsPage()),
-                                            );
-                                          },
-                                        ),
-                                        _HomeTile(
-                                          title: 'Outlook on\nWellness',
-                                          icon: Icons.show_chart,
-                                          onTap: () {
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(builder: (_) => const WellnessPage()),
-                                            );
-                                          },
-                                        ),
-                                        _HomeTile(
-                                          title: 'Documents',
-                                          icon: Icons.description,
-                                          onTap: () {
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(builder: (_) => const DocumentsPage()),
-                                            );
-                                          },
-                                        ),
-                                        _HomeTile(
-                                          title: 'Medical\nConsultation',
-                                          icon: Icons.medical_services,
-                                          onTap: () {
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(builder: (_) => const MedicalConsultationPage()),
-                                            );
-                                          },
-                                        ),
-                                        _HomeTile(
-                                          title: 'Patient Care',
-                                          icon: Icons.person,
-                                          onTap: () {
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(builder: (_) => const PatientCarePage()),
-                                            );
-                                          },
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
+                                return GridView(
+                                  physics:
+                                  const NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: cols,
+                                    mainAxisSpacing: spacing,
+                                    crossAxisSpacing: spacing,
+                                    childAspectRatio: aspect,
+                                  ),
+                                  children: [
+                                    _HomeTile(
+                                      title: 'Medical Info',
+                                      icon: Icons.favorite_border,
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                            const MedicalInfoPage(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    _HomeTile(
+                                      title: 'Medical Store',
+                                      icon: Icons.store,
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => const StorePage(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    _HomeTile(
+                                      title: 'Calculator',
+                                      icon: Icons.calculate,
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                            const CalculatorPage(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    _HomeTile(
+                                      title: 'Payment',
+                                      icon: Icons.attach_money,
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                            const PaymentPage(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    _HomeTile(
+                                      title: 'Solutions',
+                                      icon: Icons.menu_book,
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                            const SolutionsPage(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    _HomeTile(
+                                      title: 'Outlook on\nWellness',
+                                      icon: Icons.show_chart,
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                            const WellnessPage(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    _HomeTile(
+                                      title: 'Documents',
+                                      icon: Icons.description,
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                            const DocumentsPage(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    _HomeTile(
+                                      title: 'Medical\nConsultation',
+                                      icon: Icons.medical_services,
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                            const MedicalConsultationPage(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    _HomeTile(
+                                      title: 'Patient Care',
+                                      icon: Icons.person,
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                            const PatientCarePage(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ),
-                );
-              },
+                ),
+              ),
             ),
           ),
         ),
@@ -224,19 +253,25 @@ class _HeaderMenu extends StatelessWidget {
             switch (action) {
               case _HomeMenuAction.profile:
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const profile_page.ProfilePage()),
+                  MaterialPageRoute(
+                    builder: (_) => const profile_page.ProfilePage(),
+                  ),
                 );
                 break;
 
               case _HomeMenuAction.settings:
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const settings_page.SettingsPage()),
+                  MaterialPageRoute(
+                    builder: (_) => const settings_page.SettingsPage(),
+                  ),
                 );
                 break;
 
               case _HomeMenuAction.privacy:
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const privacy_page.PrivacyPage()),
+                  MaterialPageRoute(
+                    builder: (_) => const privacy_page.PrivacyPage(),
+                  ),
                 );
                 break;
 
