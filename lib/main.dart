@@ -6,6 +6,8 @@ import 'firebase_options.dart';
 
 import 'src/state/language_controller.dart';
 import 'src/pages/login.dart';
+import 'src/pages/home.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +31,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LoginPage(),
+     // home: LoginPage(),
+        home: HomePage()
     );
   }
 }

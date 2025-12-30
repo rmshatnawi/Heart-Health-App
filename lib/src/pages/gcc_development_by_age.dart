@@ -1,7 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// lib/src/pages/gcc_development_by_age.dart
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import '../components/chd_scaffold.dart';
 
 class GccDevelopmentByAgePage extends StatelessWidget {
@@ -24,97 +22,110 @@ class _DevelopmentByAgeBody extends StatelessWidget {
 
   String _t(String en, String ar) => isArabic ? ar : en;
 
+  // Static demo data (replace later with Firestore).
+  List<Map<String, dynamic>> get _ranges => [
+    {
+      'order': 1,
+      'titleEn': '0–3 months',
+      'titleAr': '٠–٣ أشهر',
+      'items': [
+        {
+          'type': 'text',
+          'titleEn': 'Typical development',
+          'titleAr': 'التطور الطبيعي',
+          'bodyEn':
+          'Lifts head briefly, follows objects with eyes, responds to sounds.',
+          'bodyAr':
+          'يرفع الرأس لفترة قصيرة، يتابع الأشياء بعينيه، يستجيب للأصوات.',
+        },
+        {
+          'type': 'text',
+          'titleEn': 'Safety tips',
+          'titleAr': 'نصائح السلامة',
+          'bodyEn': 'Always place baby on their back to sleep.',
+          'bodyAr': 'ضع الطفل دائماً على ظهره عند النوم.',
+        },
+        {
+          'type': 'link',
+          'titleEn': 'Trusted reference',
+          'titleAr': 'مرجع موثوق',
+          'url': 'https://www.cdc.gov/ncbddd/actearly/milestones/',
+        },
+      ],
+    },
+    {
+      'order': 2,
+      'titleEn': '4–6 months',
+      'titleAr': '٤–٦ أشهر',
+      'items': [
+        {
+          'type': 'text',
+          'titleEn': 'Typical development',
+          'titleAr': 'التطور الطبيعي',
+          'bodyEn':
+          'Rolls over, reaches for toys, begins babbling and social smiling.',
+          'bodyAr':
+          'يتقلب، يمسك الألعاب، يبدأ بالمناغاة والابتسام الاجتماعي.',
+        },
+        {
+          'type': 'text',
+          'titleEn': 'Feeding notes',
+          'titleAr': 'ملاحظات التغذية',
+          'bodyEn':
+          'Discuss timing of solids with your pediatrician; continue breast/formula as main nutrition.',
+          'bodyAr':
+          'ناقش موعد إدخال الطعام الصلب مع الطبيب؛ واستمر بالحليب كمصدر أساسي.',
+        },
+      ],
+    },
+    {
+      'order': 3,
+      'titleEn': '7–12 months',
+      'titleAr': '٧–١٢ شهراً',
+      'items': [
+        {
+          'type': 'text',
+          'titleEn': 'Typical development',
+          'titleAr': 'التطور الطبيعي',
+          'bodyEn':
+          'Sits without support, may crawl, responds to name, starts simple gestures.',
+          'bodyAr':
+          'يجلس دون دعم، قد يبدأ بالحبو، يستجيب لاسمه، يبدأ بإيماءات بسيطة.',
+        },
+        {
+          'type': 'text',
+          'titleEn': 'Safety tips',
+          'titleAr': 'نصائح السلامة',
+          'bodyEn':
+          'Baby-proof sharp edges, cover outlets, and keep small objects out of reach.',
+          'bodyAr':
+          'قم بتأمين المنزل: غطِّ المقابس وأبعد الأشياء الصغيرة واحمِ الحواف الحادة.',
+        },
+      ],
+    },
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseFirestore.instance
-        .collection('content_pages')
-        .doc('general_childcare_development_by_age');
+    final ranges = [..._ranges]..sort((a, b) {
+      final am = (a['order'] ?? 9999) as int;
+      final bm = (b['order'] ?? 9999) as int;
+      return am.compareTo(bm);
+    });
 
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: ref.snapshots(),
-      builder: (context, snap) {
-        if (snap.hasError) {
-          final msg = snap.error.toString();
-          return Center(
-            child: Text(
-              isArabic ? 'خطأ في تحميل البيانات:\n$msg' : 'Failed to load data:\n$msg',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF9A2A2A),
-              ),
-            ),
-          );
-        }
+    return ListView.separated(
+      itemCount: ranges.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, i) {
+        final r = ranges[i];
+        final titleEn = (r['titleEn'] ?? '').toString();
+        final titleAr = (r['titleAr'] ?? '').toString();
+        final items = (r['items'] as List<dynamic>? ?? const []);
 
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (!snap.hasData || !snap.data!.exists) {
-          return Center(
-            child: Text(
-              _t('No content yet.', 'لا يوجد محتوى بعد.'),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF5A6C96),
-              ),
-            ),
-          );
-        }
-
-        final data = snap.data!.data();
-        if (data == null) {
-          return Center(
-            child: Text(
-              _t('Data is empty.', 'البيانات فارغة.'),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF5A6C96),
-              ),
-            ),
-          );
-        }
-
-        final ranges = (data['ageRanges'] as List<dynamic>? ?? const []).cast<dynamic>();
-
-        if (ranges.isEmpty) {
-          return Center(
-            child: Text(
-              _t('Age ranges are empty.', 'فئات العمر فارغة.'),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF5A6C96),
-              ),
-            ),
-          );
-        }
-
-        ranges.sort((a, b) {
-          final am = (a as Map)['order'] ?? 9999;
-          final bm = (b as Map)['order'] ?? 9999;
-          return (am as int).compareTo(bm as int);
-        });
-
-        return ListView.separated(
-          itemCount: ranges.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (context, i) {
-            final r = (ranges[i] as Map).cast<String, dynamic>();
-            final titleEn = (r['titleEn'] ?? '').toString();
-            final titleAr = (r['titleAr'] ?? '').toString();
-            final items = (r['items'] as List<dynamic>? ?? const []).cast<dynamic>();
-
-            return _AgeRangeCard(
-              title: _t(titleEn, titleAr),
-              items: items,
-              isArabic: isArabic,
-            );
-          },
+        return _AgeRangeCard(
+          title: _t(titleEn, titleAr),
+          items: items,
+          isArabic: isArabic,
         );
       },
     );
@@ -138,23 +149,6 @@ class _AgeRangeCard extends StatelessWidget {
     return isArabic ? (ar.isEmpty ? en : ar) : (en.isEmpty ? ar : en);
   }
 
-  Future<void> _openUrl(BuildContext context, String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null || !(uri.isScheme('http') || uri.isScheme('https'))) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(isArabic ? 'رابط غير صالح' : 'Invalid URL')),
-      );
-      return;
-    }
-
-    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(isArabic ? 'تعذر فتح الرابط' : 'Could not open link')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -169,6 +163,7 @@ class _AgeRangeCard extends StatelessWidget {
         children: [
           Text(
             title,
+            textAlign: isArabic ? TextAlign.right : TextAlign.left,
             style: const TextStyle(
               fontSize: 14.5,
               fontWeight: FontWeight.w900,
@@ -176,83 +171,64 @@ class _AgeRangeCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          if (items.isEmpty)
-            Text(
-              isArabic ? 'لا يوجد محتوى داخل هذا العمر بعد.' : 'No items for this age range yet.',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF5A6C96),
-              ),
-            )
-          else
-            Column(
-              children: items.map((raw) {
-                final b = (raw as Map).cast<String, dynamic>();
-                final type = (b['type'] ?? 'text').toString();
+          Column(
+            children: items.map((raw) {
+              final b = (raw as Map).cast<String, dynamic>();
+              final type = (b['type'] ?? 'text').toString();
 
-                final t = _pick(b, 'titleEn', 'titleAr');
-                final body = _pick(b, 'bodyEn', 'bodyAr');
-                final url = (b['url'] ?? '').toString();
+              final t = _pick(b, 'titleEn', 'titleAr');
+              final body = _pick(b, 'bodyEn', 'bodyAr');
+              final url = (b['url'] ?? '').toString();
 
-                if (type == 'link') {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _SectionBox(
-                      title: t.isEmpty ? (isArabic ? 'رابط' : 'Link') : t,
-                      icon: Icons.link,
-                      child: InkWell(
-                        onTap: url.trim().isEmpty ? null : () => _openUrl(context, url.trim()),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFF),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE3EBFF)),
-                          ),
-                          child: Text(
-                            url.trim().isEmpty
-                                ? (isArabic ? 'لا يوجد رابط' : 'No URL')
-                                : url.trim(),
-                            textAlign: isArabic ? TextAlign.right : TextAlign.left,
-                            style: TextStyle(
-                              fontSize: 12.8,
-                              fontWeight: FontWeight.w800,
-                              color: url.trim().isEmpty
-                                  ? const Color(0xFF5A6C96)
-                                  : const Color(0xFF2F73FF),
-                              height: 1.35,
-                              decoration: url.trim().isEmpty ? null : TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }
-
-                // default: text
+              if (type == 'link') {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _SectionBox(
-                    title: t.isEmpty ? (isArabic ? 'معلومة' : 'Info') : t,
-                    icon: Icons.notes_rounded,
-                    child: Text(
-                      body,
-                      textAlign: isArabic ? TextAlign.right : TextAlign.left,
-                      style: const TextStyle(
-                        fontSize: 12.8,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF5A6C96),
-                        height: 1.35,
+                    title: t.isEmpty ? (isArabic ? 'رابط' : 'Link') : t,
+                    icon: Icons.link,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFF),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE3EBFF)),
+                      ),
+                      child: Text(
+                        url.isEmpty ? (isArabic ? 'لا يوجد رابط' : 'No URL') : url,
+                        textAlign: isArabic ? TextAlign.right : TextAlign.left,
+                        style: TextStyle(
+                          fontSize: 12.8,
+                          fontWeight: FontWeight.w800,
+                          color: url.isEmpty ? const Color(0xFF5A6C96) : const Color(0xFF2F73FF),
+                          height: 1.35,
+                          decoration: url.isEmpty ? null : TextDecoration.underline,
+                        ),
                       ),
                     ),
                   ),
                 );
-              }).toList(),
-            ),
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _SectionBox(
+                  title: t.isEmpty ? (isArabic ? 'معلومة' : 'Info') : t,
+                  icon: Icons.notes_rounded,
+                  child: Text(
+                    body,
+                    textAlign: isArabic ? TextAlign.right : TextAlign.left,
+                    style: const TextStyle(
+                      fontSize: 12.8,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF5A6C96),
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
         ],
       ),
     );
