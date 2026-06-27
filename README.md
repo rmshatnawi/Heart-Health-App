@@ -1,4 +1,4 @@
-# health_app
+# Health Hearts at Home (CHD App)
 
 A Flutter-based mobile health application focused on Congenital Heart Disease (CHD) management and general wellness tracking. Targets Android, iOS, Web, macOS, and Windows from a single codebase.
 
